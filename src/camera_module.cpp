@@ -13,8 +13,8 @@ CameraModule::CameraModule(char cameraId)
 	{
 		cout << "Camera Init Done." << endl;
 		
-		cameraCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
-		cameraCapture.set(CV_CAP_PROP_FRAME_WIDTH, 640);
+		cameraCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
+		cameraCapture.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
 		
 		cameraCapture.set(CV_CAP_PROP_EXPOSURE, -6.0);
 
@@ -22,13 +22,17 @@ CameraModule::CameraModule(char cameraId)
 		rows = tempImage.rows;
 		cols = tempImage.cols;
 		ROIRect = { 0, 0, cols, rows };
+
+		intrinsicMatrix = Mat(3, 3, CV_64FC1, intrinsicMatrixArray);
+		distortionCoeff = Mat(5, 1, CV_64FC1, distortionCoeffArray);
 	}
 }
 
 void CameraModule::updateFrame()
 {
 	cameraCapture >> tempImage;
-	srcImage = tempImage.clone();
+	undistort(tempImage, srcImage, intrinsicMatrix, distortionCoeff);
+	tempImage = srcImage.clone();
 
 	for (auto i = 0; i < tempImage.rows; i++)
 		for (auto j = 0; j < tempImage.cols; j++)
