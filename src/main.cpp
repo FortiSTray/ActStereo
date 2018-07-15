@@ -9,7 +9,7 @@ using namespace cv;
 int main(int argc, char* argv[])
 {
 	CameraArguments cameraArgsLeft = CAMERA_ARGS_LEFT;
-	CameraArguments cameraArgsRight = CAMERA_ARGS_RIGHT;
+	//CameraArguments cameraArgsRight = CAMERA_ARGS_RIGHT;
 
 	CameraModule cameraLeft(2, cameraArgsLeft);
 	//CameraModule cameraRight(1, cameraArgsRight);

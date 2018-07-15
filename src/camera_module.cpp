@@ -13,8 +13,8 @@ CameraModule::CameraModule(char cameraId, CameraArguments cameraArgs)
 	{
 		cout << "Camera Init Done." << endl;
 		
-		cameraCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
-		cameraCapture.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
+		cameraCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
+		cameraCapture.set(CV_CAP_PROP_FRAME_WIDTH, 640);
 		
 		cameraCapture.set(CV_CAP_PROP_EXPOSURE, -6.0);
 
@@ -44,5 +44,5 @@ void CameraModule::updateFrame()
 			srcImage.ptr<Vec3b>(i)[j] = tempImage.ptr<Vec3b>(tempImage.rows - i - 1)[tempImage.cols - j - 1];
 		}
 
-	srcImage = srcImage.clone();
+	srcImage = srcImage(ROIRect).clone();
 }
