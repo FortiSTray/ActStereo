@@ -1,6 +1,6 @@
 #include "camera_module.h"
 
-CameraModule::CameraModule(char cameraId)
+CameraModule::CameraModule(char cameraId, CameraArguments cameraArgs)
 {
 	cameraCapture.open(cameraId);
 
@@ -23,8 +23,12 @@ CameraModule::CameraModule(char cameraId)
 		cols = tempImage.cols;
 		ROIRect = { 0, 0, cols, rows };
 
-		intrinsicMatrix = Mat(3, 3, CV_64FC1, intrinsicMatrixArray);
-		distortionCoeff = Mat(5, 1, CV_64FC1, distortionCoeffArray);
+		//相机校正矩阵赋值
+		args = cameraArgs;
+		intrinsicMatrix = (Mat_<float>(3, 3) << args.fx, args.skew, args.cx, \
+												0.0f   , args.fy  , args.cy, \
+												0.0f   , 0.0f     , 1.0f    );
+		distortionCoeff = (Mat_<float>(5, 1) << args.k1, args.k2, args.p1, args.p2, 0.0f);
 	}
 }
 

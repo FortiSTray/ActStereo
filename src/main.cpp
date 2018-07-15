@@ -8,8 +8,11 @@ using namespace cv;
 
 int main(int argc, char* argv[])
 {
-	CameraModule cameraLeft(2);
-	//CameraModule cameraRight(1);
+	CameraArguments cameraArgsLeft = CAMERA_ARGS_LEFT;
+	CameraArguments cameraArgsRight = CAMERA_ARGS_RIGHT;
+
+	CameraModule cameraLeft(2, cameraArgsLeft);
+	//CameraModule cameraRight(1, cameraArgsRight);
 
 	while (true)
 	{
