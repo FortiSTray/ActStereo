@@ -2,18 +2,18 @@
 #define _CAMERA_MODULE_H
 
 //Arguments of left camera
-#define CAMERA_ARGS_LEFT  { 527.4714f, 529.0205f,    /*Focal Length*/ \
-							313.2706f, 267.7183f,    /*Principal Point*/ \
-							-1.7437f,    /*Skew*/ \
-							-0.4203f, 0.1865f,   /*Radial Distortion*/ \
-							0.0010f, -2.9267e-05f   /*Tangential Distortion*/ }
+#define CAMERA_ARGS_LEFT  { 527.2071f, 529.0991f,    /*Focal Length*/ \
+							311.2050f, 266.5736f,    /*Principal Point*/ \
+							-1.7056f,    /*Skew*/ \
+							-0.4312f, 0.2051f,   /*Radial Distortion*/ \
+							0.0011f, -9.2159e-04f   /*Tangential Distortion*/ }
 
 //Arguments of right camera
-#define CAMERA_ARGS_RIGHT { 533.6941f, 535.3964f,    /*Focal Length*/ \
-							345.5350f, 244.8390f,    /*Principal Point*/ \
-							-2.0714f,    /*Skew*/ \
-							-0.4248f, 0.1999f,   /*Radial Distortion*/ \
-							2.4476e-04f, 2.6631e-04f   /*Tangential Distortion*/ }
+#define CAMERA_ARGS_RIGHT { 535.5167f, 536.9288f,    /*Focal Length*/ \
+							345.9750f, 241.9847f,    /*Principal Point*/ \
+							-1.3922f,    /*Skew*/ \
+							-0.4289f, 0.2053f,   /*Radial Distortion*/ \
+							0.0014f, 9.8522e-05f   /*Tangential Distortion*/ }
 
 #include <iostream>
 #include <opencv2/opencv.hpp>
@@ -68,6 +68,9 @@ public:
 	int ROIRows;
 	int ROICols;
 
+	Mat intrinsicMatrix;
+	Mat distortionCoeff;
+
 private:
 
 	VideoCapture cameraCapture;
@@ -77,9 +80,6 @@ private:
 	Mat srcImage;
 	Mat tempImage;
 	Mat testImage;
-
-	Mat intrinsicMatrix;
-	Mat distortionCoeff;
 
 	Rect ROIRect;
 	

@@ -35,8 +35,9 @@ CameraModule::CameraModule(char cameraId, CameraArguments cameraArgs)
 void CameraModule::updateFrame()
 {
 	cameraCapture >> tempImage;
-	undistort(tempImage, srcImage, intrinsicMatrix, distortionCoeff);
-	tempImage = srcImage.clone();
+	/*undistort(tempImage, srcImage, intrinsicMatrix, distortionCoeff);
+	tempImage = srcImage.clone();*/
+	srcImage = tempImage.clone();
 
 	for (auto i = 0; i < tempImage.rows; i++)
 		for (auto j = 0; j < tempImage.cols; j++)
