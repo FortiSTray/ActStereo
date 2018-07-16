@@ -45,6 +45,8 @@ private:
 	Mat newMatrixLeft;
 	Mat newMatrixRight;
 	Mat reprojectionMatrix;
+	Rect validROIL;
+	Rect validROIR;
 
 	Mat mapLx;
 	Mat mapLy;
