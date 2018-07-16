@@ -49,6 +49,8 @@ public:
 	CameraModule& operator=(CameraModule&) = delete;
 	virtual~CameraModule() {}
 
+	void operator()(char cameraId, CameraArguments cameraArgs);
+
 	void setROIRect(Rect& r)
 	{
 		ROIRect = r;
