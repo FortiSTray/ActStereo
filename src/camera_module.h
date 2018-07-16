@@ -2,18 +2,18 @@
 #define _CAMERA_MODULE_H
 
 //Arguments of left camera
-#define CAMERA_ARGS_LEFT  { 527.2071f, 529.0991f,    /*Focal Length*/ \
-							311.2050f, 266.5736f,    /*Principal Point*/ \
-							-1.7056f,    /*Skew*/ \
-							-0.4312f, 0.2051f,   /*Radial Distortion*/ \
-							0.0011f, -9.2159e-04f   /*Tangential Distortion*/ }
+#define CAMERA_ARGS_LEFT  { 529.6793f, 530.9351f,    /*Focal Length*/ \
+							325.8743f, 215.4840f,    /*Principal Point*/ \
+							-1.3523f,    /*Skew*/ \
+							-0.4310f, 0.2169f,   /*Radial Distortion*/ \
+							-0.0016f, 8.1329e-05f   /*Tangential Distortion*/ }
 
 //Arguments of right camera
-#define CAMERA_ARGS_RIGHT { 535.5167f, 536.9288f,    /*Focal Length*/ \
-							345.9750f, 241.9847f,    /*Principal Point*/ \
-							-1.3922f,    /*Skew*/ \
-							-0.4289f, 0.2053f,   /*Radial Distortion*/ \
-							0.0014f, 9.8522e-05f   /*Tangential Distortion*/ }
+#define CAMERA_ARGS_RIGHT { 535.0516f, 536.7354f,    /*Focal Length*/ \
+							293.0789f, 239.2839f,    /*Principal Point*/ \
+							-1.1520f,    /*Skew*/ \
+							-0.4341f, 0.2194f,   /*Radial Distortion*/ \
+							-0.0013f, -6.8871e-04f   /*Tangential Distortion*/ }
 
 #include <iostream>
 #include <opencv2/opencv.hpp>
