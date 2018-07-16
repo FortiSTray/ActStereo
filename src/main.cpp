@@ -15,6 +15,9 @@ int main(int argc, char* argv[])
 	{
 		stStereoNo_1.updateFrame();
 
+		imshow("Left", stStereoNo_1.getFrameLeft());
+		imshow("Right", stStereoNo_1.getFrameRight());
+
 		//if push down Esc, kill the progress
 		if (waitKey(1) == 0x1B)
 		{

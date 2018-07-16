@@ -18,9 +18,9 @@ CameraModule::CameraModule(char cameraId, CameraArguments cameraArgs)
 		
 		cameraCapture.set(CV_CAP_PROP_EXPOSURE, -6.0);
 
-		cameraCapture >> tempImage;
-		rows = tempImage.rows;
-		cols = tempImage.cols;
+		cameraCapture >> srcImage;
+		rows = srcImage.rows;
+		cols = srcImage.cols;
 		ROIRect = { 0, 0, cols, rows };
 
 		//相机校正矩阵赋值
@@ -50,9 +50,9 @@ void CameraModule::operator()(char cameraId, CameraArguments cameraArgs)
 
 		cameraCapture.set(CV_CAP_PROP_EXPOSURE, -6.0);
 
-		cameraCapture >> tempImage;
-		rows = tempImage.rows;
-		cols = tempImage.cols;
+		cameraCapture >> srcImage;
+		rows = srcImage.rows;
+		cols = srcImage.cols;
 		ROIRect = { 0, 0, cols, rows };
 
 		//相机校正矩阵赋值
@@ -66,16 +66,14 @@ void CameraModule::operator()(char cameraId, CameraArguments cameraArgs)
 
 void CameraModule::updateFrame()
 {
-	cameraCapture >> tempImage;
-	/*undistort(tempImage, srcImage, intrinsicMatrix, distortionCoeff);
-	tempImage = srcImage.clone();*/
-	srcImage = tempImage.clone();
+	cameraCapture >> srcImage;
+	frame = Mat(srcImage.rows, srcImage.cols, CV_8UC3);
 
-	/*for (auto i = 0; i < tempImage.rows; i++)
-		for (auto j = 0; j < tempImage.cols; j++)
+	for (auto i = 0; i < srcImage.rows; i++)
+		for (auto j = 0; j < srcImage.cols; j++)
 		{
-			srcImage.ptr<Vec3b>(i)[j] = tempImage.ptr<Vec3b>(tempImage.rows - i - 1)[tempImage.cols - j - 1];
+			frame.ptr<Vec3b>(i)[j] = srcImage.ptr<Vec3b>(srcImage.rows - i - 1)[srcImage.cols - j - 1];
 		}
 
-	srcImage = srcImage(ROIRect).clone();*/
+	frame = frame(ROIRect).clone();
 }

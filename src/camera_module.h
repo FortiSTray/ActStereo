@@ -62,7 +62,7 @@ public:
 
 	void updateFrame();
 
-	Mat getSrcImage() { return srcImage; }
+	Mat getFrame() { return frame; }
 
 	int rows;
 	int cols;
@@ -80,8 +80,7 @@ private:
 	CameraArguments args;
 
 	Mat srcImage;
-	Mat tempImage;
-	Mat testImage;
+	Mat frame;
 
 	Rect ROIRect;
 	
