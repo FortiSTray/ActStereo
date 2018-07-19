@@ -5,8 +5,8 @@ StereoCamera::StereoCamera(char idLeft, CameraArguments argsLeft, char idRight, 
 	cameraArgsLeft = CAMERA_ARGS_LEFT;
 	cameraArgsRight = CAMERA_ARGS_RIGHT;
 
-	cameraLeft(2, cameraArgsLeft);
-	cameraRight(1, cameraArgsRight);
+	cameraLeft(idLeft, cameraArgsLeft);
+	cameraRight(idRight, cameraArgsRight);
 
 	rotationMatrix = ROTATION_MATRIX;
 	translationMatrix = TRANSLATION_MATRIX;
@@ -64,4 +64,23 @@ void StereoCamera::updateFrame()
 	reprojectImageTo3D(disp, xyz, reprojectionMatrix, true); //在实际求距离时，ReprojectTo3D出来的X / W, Y / W, Z / W都要乘以16(也就是W除以16)，才能得到正确的三维坐标信息。
 	xyz = xyz * 16;
 	imshow("disparity", disp8);
+}
+
+double StereoCamera::analogRanging(int yLeft, int xLeft, int yRight, int xRight)
+{
+	circle(frameLeft, Point(xLeft, yLeft), 2, Scalar(255, 0, 0), 2);
+	circle(frameRight, Point(xRight, yRight), 2, Scalar(255, 0, 0), 2);
+
+	double actualDist = 0;
+
+	Mat QMatrix;
+	reprojectionMatrix.convertTo(QMatrix, CV_64FC1);
+	Mat srcVector = (Mat_<double>(4, 1) << (xRight + xLeft) / 2, (yRight + yLeft) / 2, xLeft - xRight, 1.0f);
+	//cout << srcVector << endl;
+	Mat dstVector = reprojectionMatrix * srcVector;
+	//cout << reprojectionMatrix << endl;
+	//cout << dstVector << endl;
+
+	actualDist = dstVector.ptr<double>(2)[0] / dstVector.ptr<double>(3)[0];
+	return actualDist;
 }

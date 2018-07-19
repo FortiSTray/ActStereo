@@ -6,6 +6,11 @@
 													-0.0068f, -0.0004f, 1.0000f)
 #define TRANSLATION_MATRIX	 (Mat_<double>(3, 1) << -128.5457f, -0.9355f, 0.7150f)
 
+//#define ROTATION_MATRIX		 (Mat_<double>(3, 3) << 1.0f, 0.0f, 0.0f, \
+//													0.0f, 1.0f, 0.0f, \
+//													0.0f, 0.0f, 1.0f)
+//#define TRANSLATION_MATRIX	 (Mat_<double>(3, 1) << 0.0f, 0.0f, 0.0f)
+
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include "camera_module.h"
@@ -23,6 +28,9 @@ public:
 	virtual ~StereoCamera() {}
 
 	void updateFrame();
+
+	//Ä£Äâ²â¾àº¯Êý
+	double analogRanging(int yLeft, int xLeft, int yRight, int xRight);
 
 	Mat getFrameLeft() { return frameLeft; }
 	Mat getFrameRight() { return frameRight; }

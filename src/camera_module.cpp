@@ -16,7 +16,7 @@ CameraModule::CameraModule(char cameraId, CameraArguments cameraArgs)
 		cameraCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
 		cameraCapture.set(CV_CAP_PROP_FRAME_WIDTH, 640);
 		
-		cameraCapture.set(CV_CAP_PROP_EXPOSURE, -6.0);
+		cameraCapture.set(CV_CAP_PROP_EXPOSURE, -6.5);
 
 		cameraCapture >> srcImage;
 		rows = srcImage.rows;

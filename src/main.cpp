@@ -7,13 +7,32 @@
 using namespace std;
 using namespace cv;
 
+double testVar;
+
+const int g_xTrackbarMax = 640;
+const int g_yTrackbarMax = 480;
+int g_xLeftSlider;
+int g_yLeftSlider;
+int g_xRightSlider;
+int g_yRightSlider;
+void trackbarCallback(int, void*) {}
+
 int main(int argc, char* argv[])
 {
-	StereoCamera stStereoNo_1(2, CAMERA_ARGS_LEFT, 1, CAMERA_ARGS_RIGHT);
+	StereoCamera stStereoNo_1(0, CAMERA_ARGS_LEFT, 1, CAMERA_ARGS_RIGHT);
+
+	cv::namedWindow("TKB");
+	createTrackbar("xLeft", "TKB", &g_xLeftSlider, g_xTrackbarMax, trackbarCallback);
+	createTrackbar("yLeft", "TKB", &g_yLeftSlider, g_yTrackbarMax, trackbarCallback);
+	createTrackbar("xRight", "TKB", &g_xRightSlider, g_xTrackbarMax, trackbarCallback);
+	createTrackbar("yRight", "TKB", &g_yRightSlider, g_yTrackbarMax, trackbarCallback);
 
 	while (true)
 	{
 		stStereoNo_1.updateFrame();
+
+		testVar = stStereoNo_1.analogRanging(g_yLeftSlider, g_xLeftSlider, g_yRightSlider, g_xRightSlider);
+		cout << testVar << endl;
 
 		imshow("Left", stStereoNo_1.getFrameLeft());
 		imshow("Right", stStereoNo_1.getFrameRight());
