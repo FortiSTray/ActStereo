@@ -7,7 +7,7 @@
 using namespace std;
 using namespace cv;
 
-double testVar;
+Vec4d testVec;
 
 const int g_xTrackbarMax = 640;
 const int g_yTrackbarMax = 480;
@@ -31,8 +31,8 @@ int main(int argc, char* argv[])
 	{
 		stStereoNo_1.updateFrame();
 
-		testVar = stStereoNo_1.analogRanging(g_yLeftSlider, g_xLeftSlider, g_yRightSlider, g_xRightSlider);
-		cout << testVar << endl;
+		testVec = stStereoNo_1.simulatedLocating(g_yLeftSlider, g_xLeftSlider, g_yRightSlider, g_xRightSlider);
+		cout << "x = " << testVec[0] << "\ty = " << testVec[1] << "\tz = " << testVec[2] << "\td = " << testVec[3] << endl;
 
 		imshow("Left", stStereoNo_1.getFrameLeft());
 		imshow("Right", stStereoNo_1.getFrameRight());

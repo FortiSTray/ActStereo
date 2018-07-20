@@ -15,6 +15,13 @@
 							-0.4341f, 0.2194f,   /*Radial Distortion*/ \
 							-0.0013f, -6.8871e-04f   /*Tangential Distortion*/ }
 
+//Source Image Size
+#define SRC_ROWS			480
+#define SRC_COLS			640
+
+//Exposure
+#define EXPOSURE_VALUE		-6
+
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
@@ -51,13 +58,6 @@ public:
 
 	void operator()(char cameraId, CameraArguments cameraArgs);
 
-	void setROIRect(Rect& r)
-	{
-		ROIRect = r;
-		ROIRows = r.height;
-		ROICols = r.width;
-	}
-
 	bool isOpened() { return !cameraCapture.isOpened(); }
 
 	void updateFrame();
@@ -66,9 +66,6 @@ public:
 
 	int rows;
 	int cols;
-
-	int ROIRows;
-	int ROICols;
 
 	Mat intrinsicMatrix;
 	Mat distortionCoeff;
@@ -81,9 +78,6 @@ private:
 
 	Mat srcImage;
 	Mat frame;
-
-	Rect ROIRect;
-	
 };
 
 

@@ -13,15 +13,14 @@ CameraModule::CameraModule(char cameraId, CameraArguments cameraArgs)
 	{
 		cout << "Camera Init Done." << endl;
 		
-		cameraCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
-		cameraCapture.set(CV_CAP_PROP_FRAME_WIDTH, 640);
+		cameraCapture.set(CV_CAP_PROP_FRAME_HEIGHT, SRC_ROWS);
+		cameraCapture.set(CV_CAP_PROP_FRAME_WIDTH, SRC_COLS);
 		
-		cameraCapture.set(CV_CAP_PROP_EXPOSURE, -6.5);
+		cameraCapture.set(CV_CAP_PROP_EXPOSURE, EXPOSURE_VALUE);
 
 		cameraCapture >> srcImage;
 		rows = srcImage.rows;
 		cols = srcImage.cols;
-		ROIRect = { 0, 0, cols, rows };
 
 		//相机校正矩阵赋值
 		args = cameraArgs;
@@ -45,15 +44,14 @@ void CameraModule::operator()(char cameraId, CameraArguments cameraArgs)
 	{
 		cout << "Camera Init Done." << endl;
 
-		cameraCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
-		cameraCapture.set(CV_CAP_PROP_FRAME_WIDTH, 640);
+		cameraCapture.set(CV_CAP_PROP_FRAME_HEIGHT, SRC_ROWS);
+		cameraCapture.set(CV_CAP_PROP_FRAME_WIDTH, SRC_COLS);
 
-		cameraCapture.set(CV_CAP_PROP_EXPOSURE, -6.0);
+		cameraCapture.set(CV_CAP_PROP_EXPOSURE, EXPOSURE_VALUE);
 
 		cameraCapture >> srcImage;
 		rows = srcImage.rows;
 		cols = srcImage.cols;
-		ROIRect = { 0, 0, cols, rows };
 
 		//相机校正矩阵赋值
 		args = cameraArgs;
@@ -74,6 +72,4 @@ void CameraModule::updateFrame()
 		{
 			frame.ptr<Vec3b>(i)[j] = srcImage.ptr<Vec3b>(srcImage.rows - i - 1)[srcImage.cols - j - 1];
 		}
-
-	frame = frame(ROIRect).clone();
 }
