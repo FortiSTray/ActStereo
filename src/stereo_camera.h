@@ -24,6 +24,9 @@ public:
 
 	void updateFrame();
 
+	//用OpenCV内置函数输出测试深度图
+	void outputDepthImage();
+
 	//模拟测距函数
 	Vec4d simulatedLocating(int yLeft, int xLeft, int yRight, int xRight);
 

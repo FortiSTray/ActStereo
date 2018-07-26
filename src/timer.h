@@ -9,14 +9,14 @@ public:
 	Timer& operator=(const Timer&) = delete;
 	virtual ~Timer() {}
 
-	double End();
-	bool Begin();
-	bool Avaliable();
+	double end();
+	bool begin();
+	bool isAvaliable();
 
 private:
-	int Initialized;
-	__int64 Frequency;
-	__int64 BeginTime;
+	int initStatus;
+	__int64 frequency;
+	__int64 beginTime;
 
 };
 

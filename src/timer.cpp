@@ -3,30 +3,30 @@
 
 Timer::Timer()
 {
-	Initialized = QueryPerformanceFrequency((LARGE_INTEGER*)&Frequency);
+	initStatus = QueryPerformanceFrequency((LARGE_INTEGER*)&frequency);
 }
 
-bool Timer::Begin()
+bool Timer::begin()
 {
-	if (!Initialized) { return 0; }
+	if (!initStatus) { return 0; }
 
-	return QueryPerformanceCounter((LARGE_INTEGER*)&BeginTime);
+	return QueryPerformanceCounter((LARGE_INTEGER*)&beginTime);
 }
 
-double Timer::End()
+double Timer::end()
 {
-	if (!Initialized) { return 0; }
+	if (!initStatus) { return 0; }
 
 	__int64 endtime;
 
 	QueryPerformanceCounter((LARGE_INTEGER*)&endtime);
 
-	__int64 elapsed = endtime - BeginTime;
+	__int64 elapsed = endtime - beginTime;
 
-	return ((double)elapsed / (double)Frequency) * 1000.0f;  //单位毫秒
+	return ((double)elapsed / (double)frequency) * 1000.0f;  //单位毫秒
 }
 
-bool Timer::Avaliable()
+bool Timer::isAvaliable()
 {
-	return Initialized;
+	return initStatus;
 }
