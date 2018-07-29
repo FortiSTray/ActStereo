@@ -1,7 +1,6 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#include "camera_module.h"
-#include "shuttlecock_recognizer.h"
+#include "mv_stereo.h"
 #include "timer.h"
 
 using namespace std;
@@ -21,7 +20,9 @@ Timer periodTimer;
 
 int main(int argc, char* argv[])
 {
-	ShuttleRecognizer stStereoNo_1(0, CAMERA_ARGS_LEFT, 1, CAMERA_ARGS_RIGHT);
+	MVStereo stStereoNo_1("CameraLeft", CAMERA_ARGS_LEFT, "CameraRight", CAMERA_ARGS_RIGHT);
+
+	stStereoNo_1.stereoInit();
 
 	//cv::namedWindow("TKB");
 	//createTrackbar("xLeft", "TKB", &g_xLeftSlider, g_xTrackbarMax, trackbarCallback);
@@ -31,12 +32,10 @@ int main(int argc, char* argv[])
 
 	while (true)
 	{
-		stStereoNo_1.updateFrame();
+		stStereoNo_1.syncUpdate();
 
 		//testVec = stStereoNo_1.simulatedLocating(g_yLeftSlider, g_xLeftSlider, g_yRightSlider, g_xRightSlider);
 		//cout << "x = " << testVec[0] << "\ty = " << testVec[1] << "\tz = " << testVec[2] << "\td = " << testVec[3] << endl;
-
-		stStereoNo_1.BackgroundSubtract();
 
 		cout << periodTimer.end() << endl;
 		periodTimer.begin();

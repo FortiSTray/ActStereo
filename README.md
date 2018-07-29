@@ -4,13 +4,13 @@ A repository for stereo camera development in Action.
 
 ---
 
-### Test Module
+### Act Stereo_No.1
 
-![avatar](https://github.com/STpiamcee42/ActStereo/raw/master/Images/TestModule.JPG "Test Module")
+![avatar](https://github.com/STpiamcee42/ActStereo/raw/master/_Images/ActStereo_No.1.jpg "Act Stereo_No.1")
 
 
 
-### Industrial Stereo
+### Alpha Stereo Built by MV Industrial Camera
 
 
 

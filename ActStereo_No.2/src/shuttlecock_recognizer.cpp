@@ -1,7 +1,7 @@
 #include "shuttlecock_recognizer.h"
 
-ShuttleRecognizer::ShuttleRecognizer(char idLeft, CameraArguments argsLeft, char idRight, CameraArguments argsRight) :
-	StereoCamera(idLeft, argsLeft, idRight, argsRight)
+ShuttleRecognizer::ShuttleRecognizer(char* camNameL, CameraArguments argsLeft, char* camNameR, CameraArguments argsRight) :
+	MVStereo(camNameL, argsLeft, camNameR, argsRight)
 {
 	bgModel = createBackgroundSubtractorMOG2().dynamicCast<BackgroundSubtractor>();
 }
