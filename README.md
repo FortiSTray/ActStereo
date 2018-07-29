@@ -6,11 +6,13 @@ A repository for stereo camera development in Action.
 
 ### Test Module
 
-![avatar](./TestModule.jpg "Test Module")
+![avatar](https://github.com/STpiamcee42/ActStereo/raw/master/Images/TestModule.jpg "Test Module")
 
 
 
-### MindVision Camera
+### Industrial Stereo
+
+
 
 
 
