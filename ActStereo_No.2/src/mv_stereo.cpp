@@ -149,6 +149,15 @@ MVStereo::MVStereo(char* camNameL, CameraArguments argsL, char* camNameR, Camera
 	cameraL.cols = SRC_COLS;
 }
 
+MVStereo::~MVStereo()
+{
+	CameraUnInit(m_hCamera[0]);
+	CameraUnInit(m_hCamera[1]);
+
+	CameraAlignFree(m_pFrameBuffer[0]);
+	CameraAlignFree(m_pFrameBuffer[1]);
+}
+
 void MVStereo::stereoInit()
 {
 	rotationMatrix = ROTATION_MATRIX;
@@ -192,4 +201,25 @@ void MVStereo::syncUpdate()
 
 	ReleaseSemaphore(m_hSemaphoreLR, 1, &m_lSemaphoreCount);
 	ReleaseSemaphore(m_hSemaphoreRR, 1, &m_lSemaphoreCount);
+}
+
+Vec4d MVStereo::simulatedLocating(int yLeft, int xLeft, int yRight, int xRight)
+{
+	circle(frameLeft, Point(xLeft, yLeft), 3, Scalar(255, 0, 255), 2);
+	circle(frameRight, Point(xRight, yRight), 3, Scalar(255, 0, 255), 2);
+
+	//x, y, z and distance
+	Vec4d worldPoint;
+
+	Mat reprojectMatrix;
+	Q.convertTo(reprojectMatrix, CV_64FC1);
+	Mat srcVector = (Mat_<double>(4, 1) << xLeft, yLeft, xLeft - xRight, 1.0f);
+	Mat dstVector = Q * srcVector;
+
+	worldPoint[0] = dstVector.ptr<double>(0)[0] / dstVector.ptr<double>(3)[0];
+	worldPoint[1] = dstVector.ptr<double>(1)[0] / dstVector.ptr<double>(3)[0];
+	worldPoint[2] = dstVector.ptr<double>(2)[0] / dstVector.ptr<double>(3)[0];
+	worldPoint[3] = sqrt(pow(worldPoint[0], 2) + pow(worldPoint[1], 2) + pow(worldPoint[2], 2));
+
+	return worldPoint;
 }

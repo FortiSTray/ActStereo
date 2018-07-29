@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #ifndef _MV_STEREO_H
 #define _MV_STEREO_H
 
@@ -74,11 +76,14 @@ public:
 	explicit MVStereo(char* camNameL, CameraArguments argsL, char* camNameR, CameraArguments argsR);
 	MVStereo(const MVStereo&) = delete;
 	MVStereo& operator=(const MVStereo&) = delete;
-	~MVStereo() {}
+	~MVStereo();
 
 	void stereoInit();
 
 	void syncUpdate();
+
+	//Ä£Äâ²â¾àº¯Êý
+	Vec4d simulatedLocating(int yLeft, int xLeft, int yRight, int xRight);
 
 	Mat getFrameLeft() { return frameLeft; }
 	Mat getFrameRight() { return frameRight; }
