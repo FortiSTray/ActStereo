@@ -23,17 +23,11 @@ int main(int argc, char* argv[])
 
 	namedWindow("Left");
 	namedWindow("Right");
-	namedWindow("LeftT");
-	namedWindow("RightT");
+	//namedWindow("LeftT");
+	//namedWindow("RightT");
 
 	while (!mvCamera.m_bExit)
 	{
-		/*
-		==========================================================================================================
-		Main Task
-		==========================================================================================================
-		*/
-
 		mvCamera.syncRead();
 
 		srcLeft = mvCamera.getSrcImageLeft();
@@ -52,9 +46,9 @@ int main(int argc, char* argv[])
 			sprintf(fileNameL, "./Stereo/Left%d.png", counter);
 			sprintf(fileNameR, "./Stereo/Right%d.png", counter);
 			imwrite(fileNameL, srcLeft);
-			imshow("TLeft", srcLeft);
+			//imshow("TLeft", srcLeft);
 			imwrite(fileNameR, srcRight);
-			imshow("TRight", srcRight);
+			//imshow("TRight", srcRight);
 
 			if (counter == photoNum) { break; }
 		}
@@ -65,14 +59,6 @@ int main(int argc, char* argv[])
 		}
 
 		mvCamera.releaseReadSemaphore();
-
-
-		/*
-		==========================================================================================================
-		End Main Task
-		==========================================================================================================
-		*/
-		
 	}
 
 	return 0;

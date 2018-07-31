@@ -11,7 +11,7 @@ UINT WINAPI frameGetThreadLeft(LPVOID lpParam)
 	{
 		if (CameraGetImageBuffer(pThis->m_hCamera[0], &sFrameInfo, &pbyBuffer, 1000) == CAMERA_STATUS_SUCCESS)
 		{
-			WaitForSingleObject(pThis->hSemaphoreLR, INFINITE);
+			WaitForSingleObject(pThis->m_hSemaphoreLR, INFINITE);
 			{
 				//将获得的原始数据转换成RGB格式的数据，同时经过ISP模块，对图像进行降噪，边沿提升，颜色校正等处理。
 				frameGetStatus = CameraImageProcess(pThis->m_hCamera[0], pbyBuffer, pThis->m_pFrameBuffer[0], &sFrameInfo);
@@ -19,7 +19,7 @@ UINT WINAPI frameGetThreadLeft(LPVOID lpParam)
 				//复制帧头信息
 				memcpy(&pThis->m_sFrInfo[0], &sFrameInfo, sizeof(tSdkFrameHead));
 			}
-			ReleaseSemaphore(pThis->hSemaphoreLW, 1, &pThis->semaphoreCount);
+			ReleaseSemaphore(pThis->m_hSemaphoreLW, 1, &pThis->m_lSemaphoreCount);
 
 			//在成功调用CameraGetImageBuffer后，必须调用CameraReleaseImageBuffer来释放获得的buffer。
 			//否则再次调用CameraGetImageBuffer时，程序将被挂起，直到其他线程中调用CameraReleaseImageBuffer来释放了buffer
@@ -42,7 +42,7 @@ UINT WINAPI frameGetThreadRight(LPVOID lpParam)
 	{
 		if (CameraGetImageBuffer(pThis->m_hCamera[1], &sFrameInfo, &pbyBuffer, 1000) == CAMERA_STATUS_SUCCESS)
 		{
-			WaitForSingleObject(pThis->hSemaphoreRR, INFINITE);
+			WaitForSingleObject(pThis->m_hSemaphoreRR, INFINITE);
 			{
 				//将获得的原始数据转换成RGB格式的数据，同时经过ISP模块，对图像进行降噪，边沿提升，颜色校正等处理。
 				frameGetStatus = CameraImageProcess(pThis->m_hCamera[1], pbyBuffer, pThis->m_pFrameBuffer[1], &sFrameInfo);
@@ -50,7 +50,7 @@ UINT WINAPI frameGetThreadRight(LPVOID lpParam)
 				//复制帧头信息
 				memcpy(&pThis->m_sFrInfo[1], &sFrameInfo, sizeof(tSdkFrameHead));
 			}
-			ReleaseSemaphore(pThis->hSemaphoreRW, 1, &pThis->semaphoreCount);
+			ReleaseSemaphore(pThis->m_hSemaphoreRW, 1, &pThis->m_lSemaphoreCount);
 
 			//在成功调用CameraGetImageBuffer后，必须调用CameraReleaseImageBuffer来释放获得的buffer。
 			//否则再次调用CameraGetImageBuffer时，程序将被挂起，直到其他线程中调用CameraReleaseImageBuffer来释放了buffer
@@ -68,10 +68,10 @@ MindVisionCamera::MindVisionCamera(char* camName1, char* camName2)
 	tSdkCameraCapbility sCameraInfo;
 
 	//创建信号量
-	hSemaphoreLR = CreateSemaphore(NULL, 1, 1, "semaphoreLeftRead");
-	hSemaphoreLW = CreateSemaphore(NULL, 0, 1, "semaphoreLeftWrite");
-	hSemaphoreRR = CreateSemaphore(NULL, 1, 1, "semaphoreRightRead");
-	hSemaphoreRW = CreateSemaphore(NULL, 0, 1, "semaphoreRightWrite");
+	m_hSemaphoreLR = CreateSemaphore(NULL, 1, 1, "semaphoreLeftRead");
+	m_hSemaphoreLW = CreateSemaphore(NULL, 0, 1, "semaphoreLeftWrite");
+	m_hSemaphoreRR = CreateSemaphore(NULL, 1, 1, "semaphoreRightRead");
+	m_hSemaphoreRW = CreateSemaphore(NULL, 0, 1, "semaphoreRightWrite");
 
 	if (CameraEnumerateDeviceEx() == 0)
 	{

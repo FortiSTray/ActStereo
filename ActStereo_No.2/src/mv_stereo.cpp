@@ -12,13 +12,19 @@ UINT WINAPI frameGetThreadLeft(LPVOID lpParam)
 		if (CameraGetImageBuffer(pThis->m_hCamera[0], &sFrameInfo, &pbyBuffer, 1000) == CAMERA_STATUS_SUCCESS)
 		{
 			WaitForSingleObject(pThis->m_hSemaphoreLR, INFINITE);
+
+			if (sFrameInfo.iHeight == SRC_ROWS && sFrameInfo.iWidth == SRC_COLS)
 			{
 				//将获得的原始数据转换成RGB格式的数据，同时经过ISP模块，对图像进行降噪，边沿提升，颜色校正等处理。
 				frameGetStatus = CameraImageProcess(pThis->m_hCamera[0], pbyBuffer, pThis->m_pFrameBuffer[0], &sFrameInfo);
+				if (frameGetStatus != CAMERA_STATUS_SUCCESS) { pThis->m_bExit = TRUE; }
 
 				//复制帧头信息
 				memcpy(&pThis->m_sFrInfo[0], &sFrameInfo, sizeof(tSdkFrameHead));
 			}
+			else
+				pThis->m_bExit = TRUE;
+
 			ReleaseSemaphore(pThis->m_hSemaphoreLW, 1, &pThis->m_lSemaphoreCount);
 
 			//在成功调用CameraGetImageBuffer后，必须调用CameraReleaseImageBuffer来释放获得的buffer。
@@ -43,13 +49,19 @@ UINT WINAPI frameGetThreadRight(LPVOID lpParam)
 		if (CameraGetImageBuffer(pThis->m_hCamera[1], &sFrameInfo, &pbyBuffer, 1000) == CAMERA_STATUS_SUCCESS)
 		{
 			WaitForSingleObject(pThis->m_hSemaphoreRR, INFINITE);
+			
+			if (sFrameInfo.iHeight == SRC_ROWS && sFrameInfo.iWidth == SRC_COLS)
 			{
 				//将获得的原始数据转换成RGB格式的数据，同时经过ISP模块，对图像进行降噪，边沿提升，颜色校正等处理。
 				frameGetStatus = CameraImageProcess(pThis->m_hCamera[1], pbyBuffer, pThis->m_pFrameBuffer[1], &sFrameInfo);
+				if (frameGetStatus != CAMERA_STATUS_SUCCESS) { pThis->m_bExit = TRUE; }
 
 				//复制帧头信息
 				memcpy(&pThis->m_sFrInfo[1], &sFrameInfo, sizeof(tSdkFrameHead));
 			}
+			else
+				pThis->m_bExit = TRUE;
+			
 			ReleaseSemaphore(pThis->m_hSemaphoreRW, 1, &pThis->m_lSemaphoreCount);
 
 			//在成功调用CameraGetImageBuffer后，必须调用CameraReleaseImageBuffer来释放获得的buffer。
@@ -64,8 +76,8 @@ UINT WINAPI frameGetThreadRight(LPVOID lpParam)
 
 MVStereo::MVStereo(char* camNameL, CameraArguments argsL, char* camNameR, CameraArguments argsR)
 {
-	CameraSdkStatus cameraInitStatus;
-	tSdkCameraCapbility sCameraInfo;
+	CameraSdkStatus		cameraInitStatus;
+	tSdkCameraCapbility	sCameraInfo;
 
 	//创建信号量
 	m_hSemaphoreLR = CreateSemaphore(NULL, 1, 1, "semaphoreLeftRead");
@@ -110,8 +122,8 @@ MVStereo::MVStereo(char* camNameL, CameraArguments argsL, char* camNameR, Camera
 	//获得相机的特性描述，两个相机型号及硬件设置完全相同，所以只需要获取一台相机的信息
 	CameraGetCapability(m_hCamera[0], &sCameraInfo);
 
-	m_pFrameBuffer[0] = (BYTE *)CameraAlignMalloc(sCameraInfo.sResolutionRange.iHeightMax*sCameraInfo.sResolutionRange.iWidthMax * 3, 16);
-	m_pFrameBuffer[1] = (BYTE *)CameraAlignMalloc(sCameraInfo.sResolutionRange.iHeightMax*sCameraInfo.sResolutionRange.iWidthMax * 3, 16);
+	m_pFrameBuffer[0] = (BYTE *)CameraAlignMalloc(sCameraInfo.sResolutionRange.iHeightMax * sCameraInfo.sResolutionRange.iWidthMax * 3, 16);
+	m_pFrameBuffer[1] = (BYTE *)CameraAlignMalloc(sCameraInfo.sResolutionRange.iHeightMax * sCameraInfo.sResolutionRange.iWidthMax * 3, 16);
 
 	if (sCameraInfo.sIspCapacity.bMonoSensor)
 	{
@@ -144,9 +156,6 @@ MVStereo::MVStereo(char* camNameL, CameraArguments argsL, char* camNameR, Camera
 													0.0f    , 0.0f      , 1.0f      );
 	cameraL.distortionCoeff = (Mat_<float>(5, 1) << argsL.k1, argsL.k2, argsL.p1, argsL.p2, 0.0f);
 	cameraR.distortionCoeff = (Mat_<float>(5, 1) << argsR.k1, argsR.k2, argsR.p1, argsR.p2, 0.0f);
-
-	cameraL.rows = SRC_ROWS;
-	cameraL.cols = SRC_COLS;
 }
 
 MVStereo::~MVStereo()
@@ -165,15 +174,15 @@ void MVStereo::stereoInit()
 
 	//立体校正
 	stereoRectify(cameraL.intrinsicMatrix, cameraL.distortionCoeff, cameraR.intrinsicMatrix, cameraR.distortionCoeff,
-		Size(cameraL.cols, cameraL.rows), rotationMatrix, translationMatrix, RLeft, RRight, PLeft, PRight, Q,
-		CALIB_ZERO_DISPARITY, 0, Size(cameraL.cols, cameraL.rows), &validROILeft, &validROIRight);
+		Size(SRC_COLS, SRC_ROWS), rotationMatrix, translationMatrix, RLeft, RRight, PLeft, PRight, Q,
+		CALIB_ZERO_DISPARITY, 0, Size(SRC_COLS, SRC_ROWS), &validROILeft, &validROIRight);
 
 	//获取左右相机的映射矩阵
 	initUndistortRectifyMap(cameraL.intrinsicMatrix, cameraL.distortionCoeff, RLeft, PLeft,
-		Size(cameraL.cols, cameraL.rows), CV_32FC1, mapLx, mapLy);
+		Size(SRC_COLS, SRC_ROWS), CV_32FC1, mapLx, mapLy);
 
 	initUndistortRectifyMap(cameraR.intrinsicMatrix, cameraR.distortionCoeff, RRight, PRight,
-		Size(cameraL.cols, cameraL.rows), CV_32FC1, mapRx, mapRy);
+		Size(SRC_COLS, SRC_ROWS), CV_32FC1, mapRx, mapRy);
 }
 
 void MVStereo::syncUpdate()
@@ -196,9 +205,6 @@ void MVStereo::syncUpdate()
 		line(frameRight, cvPoint(0, 48 * i), cvPoint(640 - 1, 48 * i), cvScalar(0, 255, 0));
 	}
 
-	imshow("Left", frameLeft);
-	imshow("Right", frameRight);
-
 	ReleaseSemaphore(m_hSemaphoreLR, 1, &m_lSemaphoreCount);
 	ReleaseSemaphore(m_hSemaphoreRR, 1, &m_lSemaphoreCount);
 }
@@ -207,6 +213,9 @@ Vec4d MVStereo::simulatedLocating(int yLeft, int xLeft, int yRight, int xRight)
 {
 	circle(frameLeft, Point(xLeft, yLeft), 3, Scalar(255, 0, 255), 2);
 	circle(frameRight, Point(xRight, yRight), 3, Scalar(255, 0, 255), 2);
+
+	imshow("Left", frameLeft);
+	imshow("Right", frameRight);
 
 	//x, y, z and distance
 	Vec4d worldPoint;

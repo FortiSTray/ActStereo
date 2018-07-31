@@ -27,8 +27,8 @@ public:
 
 	void syncRead()
 	{
-		WaitForSingleObject(hSemaphoreLW, INFINITE);
-		WaitForSingleObject(hSemaphoreRW, INFINITE);
+		WaitForSingleObject(m_hSemaphoreLW, INFINITE);
+		WaitForSingleObject(m_hSemaphoreRW, INFINITE);
 		srcImageLeft = Mat(Size(m_sFrInfo[0].iWidth, m_sFrInfo[0].iHeight), CV_8UC3, m_pFrameBuffer[0]);
 		srcImageRight = Mat(Size(m_sFrInfo[1].iWidth, m_sFrInfo[1].iHeight), CV_8UC3, m_pFrameBuffer[1]);
 		
@@ -36,8 +36,8 @@ public:
 
 	void releaseReadSemaphore()
 	{
-		ReleaseSemaphore(hSemaphoreLR, 1, &semaphoreCount);
-		ReleaseSemaphore(hSemaphoreRR, 1, &semaphoreCount);
+		ReleaseSemaphore(m_hSemaphoreLR, 1, &m_lSemaphoreCount);
+		ReleaseSemaphore(m_hSemaphoreRR, 1, &m_lSemaphoreCount);
 	}
 
 	Mat getSrcImageLeft() { return srcImageLeft; }
@@ -52,11 +52,11 @@ public:
 	BYTE*			    m_pFrameBuffer[2];			//用于将原始图像数据转换为RGB的缓冲区
 	tSdkFrameHead		m_sFrInfo[2];		        //用于保存当前图像帧的帧头信息
 
-	HANDLE hSemaphoreLR;
-	HANDLE hSemaphoreLW;
-	HANDLE hSemaphoreRR;
-	HANDLE hSemaphoreRW;
-	long semaphoreCount;
+	HANDLE	m_hSemaphoreLR;
+	HANDLE	m_hSemaphoreLW;
+	HANDLE	m_hSemaphoreRR;
+	HANDLE	m_hSemaphoreRW;
+	long	m_lSemaphoreCount;
 
 private:
 

@@ -59,6 +59,9 @@ Vec4d StereoCamera::simulatedLocating(int yLeft, int xLeft, int yRight, int xRig
 	worldPoint[2] = dstVector.ptr<double>(2)[0] / dstVector.ptr<double>(3)[0];
 	worldPoint[3] = sqrt(pow(worldPoint[0], 2) + pow(worldPoint[1], 2) + pow(worldPoint[2], 2));
 
+	imshow("left", frameLeft);
+	imshow("right", frameRight);
+
 	return worldPoint;
 }
 

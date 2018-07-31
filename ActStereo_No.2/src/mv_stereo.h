@@ -7,28 +7,25 @@
 #define SRC_ROWS			480
 #define SRC_COLS			640
 
-//Exposure
-#define EXPOSURE_VALUE		-6
-
 //Arguments of left camera
-#define CAMERA_ARGS_LEFT  { 529.6793f, 530.9351f,    /*Focal Length*/ \
-							325.8743f, 215.4840f,    /*Principal Point*/ \
-							-1.3523f,    /*Skew*/ \
-							-0.4310f, 0.2169f,   /*Radial Distortion*/ \
-							-0.0016f, 8.1329e-05f   /*Tangential Distortion*/ }
+#define CAMERA_ARGS_LEFT  { 1046.833f, 1045.123f,    /*Focal Length*/ \
+							359.406f, 263.913f,    /*Principal Point*/ \
+							0.665f,    /*Skew*/ \
+							-0.116f, 0.435f,   /*Radial Distortion*/ \
+							0.0012f, 0.0006185f   /*Tangential Distortion*/ }
 
 //Arguments of right camera
-#define CAMERA_ARGS_RIGHT { 535.0516f, 536.7354f,    /*Focal Length*/ \
-							293.0789f, 239.2839f,    /*Principal Point*/ \
-							-1.1520f,    /*Skew*/ \
-							-0.4341f, 0.2194f,   /*Radial Distortion*/ \
-							-0.0013f, -6.8871e-04f   /*Tangential Distortion*/ }
+#define CAMERA_ARGS_RIGHT { 1131.1036f, 1128.697f,    /*Focal Length*/ \
+							319.279f, 284.474f,    /*Principal Point*/ \
+							0.8227f,    /*Skew*/ \
+							-0.1526f, 0.0391f,   /*Radial Distortion*/ \
+							0.000568f, 0.0004046f   /*Tangential Distortion*/ }
 
-//Rotation Matrix and Translation Matrix
-#define ROTATION_MATRIX		 (Mat_<double>(3, 3) << 1.0000f, -0.0063f, 0.0068f, \
-													0.0063f, 1.0000f, 0.0004f, \
-													-0.0068f, -0.0004f, 1.0000f)
-#define TRANSLATION_MATRIX	 (Mat_<double>(3, 1) << -128.5457f, -0.9355f, 0.7150f)
+//Rotation Matrix(Need Transposing) and Translation Matrix
+#define ROTATION_MATRIX		 (Mat_<double>(3, 3) << 0.9991f, 0.0063f, 0.0421f, \
+													0.0046f, 0.9999f, -0.0109f, \
+													-0.0421f, 0.0111f, 1.0000f)
+#define TRANSLATION_MATRIX	 (Mat_<double>(3, 1) << -698.784f, -10.2996f, -5.9408f)
 
 #include <iostream>
 #include "windows.h"
@@ -60,9 +57,6 @@ typedef struct
 //Struct of MindVision Camera
 typedef struct
 {
-	int rows;
-	int cols;
-
 	Mat intrinsicMatrix;
 	Mat distortionCoeff;
 
@@ -82,7 +76,7 @@ public:
 
 	void syncUpdate();
 
-	//Ä£Äâ²â¾àº¯Êý
+	//Ä£ï¿½ï¿½ï¿½àº¯ï¿½ï¿½
 	Vec4d simulatedLocating(int yLeft, int xLeft, int yRight, int xRight);
 
 	Mat getFrameLeft() { return frameLeft; }
@@ -90,12 +84,12 @@ public:
 
 public:
 
-	CameraHandle		m_hCamera[2];				//Ë«Ïà»ú±ÈÈüÄ£Ê½Ïà»ú¾ä±ú×é
-	UINT				m_uThreadID[2];				//Í¼Ïñ×¥È¡Ïß³ÌµÄID
-	HANDLE				m_hFrameGetThread[2];	    //Í¼Ïñ×¥È¡Ïß³ÌµÄ¾ä±ú
-	BYTE*			    m_pFrameBuffer[2];			//ÓÃÓÚ½«Ô­Ê¼Í¼ÏñÊý¾Ý×ª»»ÎªRGBµÄ»º³åÇø
-	tSdkFrameHead		m_sFrInfo[2];		        //ÓÃÓÚ±£´æµ±Ç°Í¼ÏñÖ¡µÄÖ¡Í·ÐÅÏ¢
-	BOOL				m_bExit = FALSE;			//ÓÃÀ´Í¨ÖªÍ¼Ïñ×¥È¡Ïß³Ì½áÊø
+	CameraHandle		m_hCamera[2];				//Ë«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	UINT				m_uThreadID[2];				//Í¼ï¿½ï¿½×¥È¡ï¿½ß³Ìµï¿½ID
+	HANDLE				m_hFrameGetThread[2];	    //Í¼ï¿½ï¿½×¥È¡ï¿½ß³ÌµÄ¾ï¿½ï¿½
+	BYTE*			    m_pFrameBuffer[2];			//ï¿½ï¿½ï¿½Ú½ï¿½Ô­Ê¼Í¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ÎªRGBï¿½Ä»ï¿½ï¿½ï¿½ï¿½ï¿½
+	tSdkFrameHead		m_sFrInfo[2];		        //ï¿½ï¿½ï¿½Ú±ï¿½ï¿½æµ±Ç°Í¼ï¿½ï¿½Ö¡ï¿½ï¿½Ö¡Í·ï¿½ï¿½Ï¢
+	BOOL				m_bExit = FALSE;			//ï¿½ï¿½ï¿½ï¿½Í¨ÖªÍ¼ï¿½ï¿½×¥È¡ï¿½ß³Ì½ï¿½ï¿½ï¿½
 
 	HANDLE	m_hSemaphoreLR;
 	HANDLE	m_hSemaphoreLW;
@@ -107,12 +101,6 @@ private:
 
 	MVCamera cameraL;
 	MVCamera cameraR;
-
-	Mat srcImageLeft;
-	Mat srcImageRight;
-
-	Mat frameLeft;
-	Mat frameRight;
 
 	Mat rotationMatrix;
 	Mat translationMatrix;
@@ -129,6 +117,12 @@ private:
 	Mat mapLy;
 	Mat mapRx;
 	Mat mapRy;
+
+	Mat srcImageLeft;
+	Mat srcImageRight;
+
+	Mat frameLeft;
+	Mat frameRight;
 };
 
 #endif //_MV_STEREO_H
