@@ -171,6 +171,7 @@ void MVStereo::stereoInit()
 {
 	rotationMatrix = ROTATION_MATRIX;
 	translationMatrix = TRANSLATION_MATRIX;
+	rtMatrix = RT_MATRIX;
 
 	//立体校正
 	stereoRectify(cameraL.intrinsicMatrix, cameraL.distortionCoeff, cameraR.intrinsicMatrix, cameraR.distortionCoeff,
@@ -199,11 +200,11 @@ void MVStereo::syncUpdate()
 	remap(srcImageLeft , frameLeft , mapLx, mapLy, INTER_LINEAR);
 	remap(srcImageRight, frameRight, mapRx, mapRy, INTER_LINEAR);
 
-	for (int i = 1; i < 10; i++)
-	{
-		line(frameLeft, cvPoint(0, 48 * i), cvPoint(640 - 1, 48 * i), cvScalar(0, 255, 0));
-		line(frameRight, cvPoint(0, 48 * i), cvPoint(640 - 1, 48 * i), cvScalar(0, 255, 0));
-	}
+	//for (int i = 1; i < 10; i++)
+	//{
+	//	line(frameLeft, cvPoint(0, 48 * i), cvPoint(640 - 1, 48 * i), cvScalar(0, 255, 0));
+	//	line(frameRight, cvPoint(0, 48 * i), cvPoint(640 - 1, 48 * i), cvScalar(0, 255, 0));
+	//}
 
 	ReleaseSemaphore(m_hSemaphoreLR, 1, &m_lSemaphoreCount);
 	ReleaseSemaphore(m_hSemaphoreRR, 1, &m_lSemaphoreCount);
@@ -228,6 +229,13 @@ Vec4d MVStereo::simulatedLocating(int yLeft, int xLeft, int yRight, int xRight)
 	worldPoint[0] = dstVector.ptr<double>(0)[0] / dstVector.ptr<double>(3)[0];
 	worldPoint[1] = dstVector.ptr<double>(1)[0] / dstVector.ptr<double>(3)[0];
 	worldPoint[2] = dstVector.ptr<double>(2)[0] / dstVector.ptr<double>(3)[0];
+
+	Mat realVector = (Mat_<double>(4, 1) << worldPoint[0], worldPoint[1], worldPoint[2], 1.0f);
+	dstVector = rtMatrix * realVector;
+
+	worldPoint[0] = dstVector.ptr<double>(0)[0];
+	worldPoint[1] = dstVector.ptr<double>(1)[0];
+	worldPoint[2] = dstVector.ptr<double>(2)[0];
 	worldPoint[3] = sqrt(pow(worldPoint[0], 2) + pow(worldPoint[1], 2) + pow(worldPoint[2], 2));
 
 	return worldPoint;

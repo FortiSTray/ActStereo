@@ -27,6 +27,11 @@
 													-0.0421f, 0.0111f, 1.0000f)
 #define TRANSLATION_MATRIX	 (Mat_<double>(3, 1) << -698.784f, -10.2996f, -5.9408f)
 
+//RT Matrix Convert Camera Coordinate to World Coordinate (World = RT * Camera)
+#define RT_MATRIX			 (Mat_<double>(3, 4) << 0.9f, -0.1, -0.0, -314.8, \
+													0.0, -0.8, 0.3, 627.3, \
+													0.3, 0.7, 0.9, -1107.0)
+
 #include <iostream>
 #include "windows.h"
 #include "process.h"
@@ -76,7 +81,7 @@ public:
 
 	void syncUpdate();
 
-	//ģ���ຯ��
+	//Simulated Locating
 	Vec4d simulatedLocating(int yLeft, int xLeft, int yRight, int xRight);
 
 	Mat getFrameLeft() { return frameLeft; }
@@ -84,12 +89,12 @@ public:
 
 public:
 
-	CameraHandle		m_hCamera[2];				//˫�������ģʽ��������
-	UINT				m_uThreadID[2];				//ͼ��ץȡ�̵߳�ID
-	HANDLE				m_hFrameGetThread[2];	    //ͼ��ץȡ�̵߳ľ��
-	BYTE*			    m_pFrameBuffer[2];			//���ڽ�ԭʼͼ������ת��ΪRGB�Ļ�����
-	tSdkFrameHead		m_sFrInfo[2];		        //���ڱ��浱ǰͼ��֡��֡ͷ��Ϣ
-	BOOL				m_bExit = FALSE;			//����֪ͨͼ��ץȡ�߳̽���
+	CameraHandle		m_hCamera[2];
+	UINT				m_uThreadID[2];
+	HANDLE				m_hFrameGetThread[2];
+	BYTE*			    m_pFrameBuffer[2];
+	tSdkFrameHead		m_sFrInfo[2];
+	BOOL				m_bExit = FALSE;
 
 	HANDLE	m_hSemaphoreLR;
 	HANDLE	m_hSemaphoreLW;
@@ -104,6 +109,7 @@ private:
 
 	Mat rotationMatrix;
 	Mat translationMatrix;
+	Mat rtMatrix;
 
 	Mat RLeft;				//Rotation Matrix of Left Camera
 	Mat RRight;				//Rotation Matrix of Right Camera
