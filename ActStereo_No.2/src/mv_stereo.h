@@ -8,29 +8,29 @@
 #define SRC_COLS			640
 
 //Arguments of left camera
-#define CAMERA_ARGS_LEFT  { 1046.833f, 1045.123f,    /*Focal Length*/ \
-							359.406f, 263.913f,    /*Principal Point*/ \
-							0.665f,    /*Skew*/ \
-							-0.116f, 0.435f,   /*Radial Distortion*/ \
-							0.0012f, 0.0006185f   /*Tangential Distortion*/ }
+#define CAMERA_ARGS_LEFT  { 1048.96647747845f, 1047.34210680108f,    /*Focal Length*/ \
+							358.316505355369f, 250.414596319905f,    /*Principal Point*/ \
+							0.533969287533816f,    /*Skew*/ \
+							-0.0870216932789717f, 0.162170702067133f,   /*Radial Distortion*/ \
+							-0.00127355847135182f, -0.000335534423369419f   /*Tangential Distortion*/ }
 
 //Arguments of right camera
-#define CAMERA_ARGS_RIGHT { 1131.1036f, 1128.697f,    /*Focal Length*/ \
-							319.279f, 284.474f,    /*Principal Point*/ \
-							0.8227f,    /*Skew*/ \
-							-0.1526f, 0.0391f,   /*Radial Distortion*/ \
-							0.000568f, 0.0004046f   /*Tangential Distortion*/ }
+#define CAMERA_ARGS_RIGHT { 1135.55569966515f, 1133.61162389769f,    /*Focal Length*/ \
+							321.278694069469f, 271.861585817153f,    /*Principal Point*/ \
+							0.395850223483792f,    /*Skew*/ \
+							-0.178275203194529f, 0.424986480722085f,   /*Radial Distortion*/ \
+							-0.00100639818615331f, 0.000676255973728689f   /*Tangential Distortion*/ }
 
 //Rotation Matrix(Need Transposing) and Translation Matrix
-#define ROTATION_MATRIX		 (Mat_<double>(3, 3) << 0.9991f, 0.0063f, 0.0421f, \
-													0.0046f, 0.9999f, -0.0109f, \
-													-0.0421f, 0.0111f, 1.0000f)
-#define TRANSLATION_MATRIX	 (Mat_<double>(3, 1) << -698.784f, -10.2996f, -5.9408f)
+#define ROTATION_MATRIX		 (Mat_<double>(3, 3) << 0.999191628914595f, -0.00823526575398190f, 0.0393480508406796f, \
+													0.00858540984152276f, 0.999924966555566f, -0.00873796296076068f, \
+													-0.0392731389737629f, 0.00906871858709015f, 0.999187359256679f)
+#define TRANSLATION_MATRIX	 (Mat_<double>(3, 1) << -706.344134499443f, -10.1298529199082f, -2.14161643140913f)
 
 //RT Matrix Convert Camera Coordinate to World Coordinate (World = RT * Camera)
-#define RT_MATRIX			 (Mat_<double>(3, 4) << 0.9f, -0.1, -0.0, -314.8, \
-													0.0, -0.8, 0.3, 627.3, \
-													0.3, 0.7, 0.9, -1107.0)
+#define RT_MATRIX			 (Mat_<double>(3, 4) << 1.0f, 0.0f, 0.0f, 0.0f, \
+													0.0f, 1.0f, 0.0f, 0.0f, \
+													0.0f, 0.0f, 1.0f, 0.0f)
 
 #include <iostream>
 #include "windows.h"

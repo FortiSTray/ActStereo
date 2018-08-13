@@ -1,5 +1,6 @@
 #include <iostream>
-#include <opencv2/opencv.hpp>
+#include <fstream>
+#include "opencv2/opencv.hpp"
 #include "shuttlecock_recognizer.h"
 #include "timer.h"
 
@@ -18,7 +19,7 @@ Mat tmpLeft;
 Mat tmpRight;
 
 Vec4d testVec;
-//
+
 //const int g_xTrackbarMax = 640;
 //const int g_yTrackbarMax = 480;
 //int g_xLeftSlider = 300;
@@ -30,8 +31,10 @@ Vec4d testVec;
 int main(int argc, char* argv[])
 {
 	ShuttleRecognizer actStereoNo_1("CameraLeft", CAMERA_ARGS_LEFT, "CameraRight", CAMERA_ARGS_RIGHT);
-
 	actStereoNo_1.stereoInit();
+
+	ofstream outputFile;
+	outputFile.open("Data.txt", ios::out | ios::trunc);
 
 	//cv::namedWindow("TKB");
 	//createTrackbar("xLeft", "TKB", &g_xLeftSlider, g_xTrackbarMax, trackbarCallback);
@@ -46,36 +49,51 @@ int main(int argc, char* argv[])
 		//testVec = actStereoNo_1.simulatedLocating(g_yLeftSlider, g_xLeftSlider, g_yRightSlider, g_xRightSlider);
 		//cout << "x = " << testVec[0] << "\ty = " << testVec[1] << "\tz = " << testVec[2] << "\td = " << testVec[3] << endl;
 
+		imshow("LeftSrc", actStereoNo_1.getFrameLeft());
+		imshow("RightSrc", actStereoNo_1.getFrameRight());
+
 		actStereoNo_1.backgroundSubtract();
 
-		actStereoNo_1.preProcessing();
-		isPointsFound = actStereoNo_1.findMatchedPoints(actStereoNo_1.getDstLeft(), shuttlecockL, actStereoNo_1.getDstRight(), shuttlecockR);
+		actStereoNo_1.preProc();
+		//isPointsFound = actStereoNo_1.findMatchedPoints(actStereoNo_1.getDstLeft(), shuttlecockL, actStereoNo_1.getDstRight(), shuttlecockR);
 
-		cvtColor(actStereoNo_1.getDstLeft(), tmpLeft, CV_GRAY2BGR);
-		cvtColor(actStereoNo_1.getDstRight(), tmpRight, CV_GRAY2BGR);
+		//cvtColor(actStereoNo_1.getDstLeft(), tmpLeft, CV_GRAY2BGR);
+		//cvtColor(actStereoNo_1.getDstRight(), tmpRight, CV_GRAY2BGR);
 
-		if (isPointsFound == true)
-		{
-			//cout << "yes" << endl;
-			isPointsFound = false;
+		actStereoNo_1.detectCorner(actStereoNo_1.getDstLeft(), actStereoNo_1.getCornerLeft(), Size(3, 3), 1);
+		imshow("cornerL", actStereoNo_1.getCornerLeft());
+		actStereoNo_1.detectCorner(actStereoNo_1.getDstRight(), actStereoNo_1.getCornerRight(), Size(3, 3), 1);
+		imshow("cornerR", actStereoNo_1.getCornerRight());
 
-			circle(tmpLeft, shuttlecockL.core, 3, Scalar(0, 0, 255), 2);
-			circle(tmpRight, shuttlecockR.core, 3, Scalar(0, 0, 255), 2);
+		actStereoNo_1.matchFeaturePoints(actStereoNo_1.getCornerLeft(), actStereoNo_1.getCornerRight(), Size(7, 7), 3, 45);
 
-			testVec = actStereoNo_1.simulatedLocating(shuttlecockL.core.y, shuttlecockL.core.x, shuttlecockR.core.y, shuttlecockR.core.x);
-			cout << "x = " << testVec[0] << "\ty = " << testVec[1] << "\tz = " << testVec[2] << "\td = " << testVec[3] << endl;
-		}
+		//if (isPointsFound == true)
+		//{
+		//	//cout << "yes" << endl;
+		//	isPointsFound = false;
 
-		shuttlecockL.size = 0;
-		shuttlecockR.size = 0;
-		shuttlecockL.core = Point(-1, -1);
-		shuttlecockR.core = Point(-1, -1);
+		//	testVec = actStereoNo_1.simulatedLocating(shuttlecockL.core.y, shuttlecockL.core.x, shuttlecockR.core.y, shuttlecockR.core.x);
+		//	
+		//	if (testVec[0] < 500 && testVec[0] > -500 && testVec[1] < 4000 && testVec[2] > 0 && testVec[2] < 10000)
+		//	{
+		//		cout << "x = " << testVec[0] << "\ty = " << testVec[1] << "\tz = " << testVec[2] << "\td = " << testVec[3] << endl;
+		//		outputFile << "x = " << testVec[0] << "\ty = " << testVec[1] << "\tz = " << testVec[2] << "\td = " << testVec[3] << endl;
 
-		imshow("Left", tmpLeft);
-		imshow("Right", tmpRight);
+		//		circle(tmpLeft, shuttlecockL.core, 3, Scalar(0, 0, 255), 2);
+		//		circle(tmpRight, shuttlecockR.core, 3, Scalar(0, 0, 255), 2);
+		//	}
+		//}
 
-		//cout << periodTimer.end() << endl;
-		//periodTimer.begin();
+		//shuttlecockL.size = 0;
+		//shuttlecockR.size = 0;
+		//shuttlecockL.core = Point(-1, -1);
+		//shuttlecockR.core = Point(-1, -1);
+
+		imshow("Left", actStereoNo_1.getDstLeft());
+		imshow("Right", actStereoNo_1.getDstRight());
+
+		////cout << periodTimer.end() << endl;
+		////periodTimer.begin();
 
 		//if push down Esc, kill the progress
 		keyStatus = waitKey(1);

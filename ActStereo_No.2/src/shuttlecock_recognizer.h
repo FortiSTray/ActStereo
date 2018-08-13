@@ -38,7 +38,11 @@ public:
 	//背景减除
 	void backgroundSubtract();
 
-	void preProcessing();
+	void preProc();
+
+	void detectCorner(Mat &image, Mat &cornerImage, Size coreSize, int thresh = 1);
+	
+	void matchFeaturePoints(Mat &imageLeft, Mat &imageRight, Size windowSize, int yRange = 3, int thresh = 10);
 
 	//以一个点为种子点获取连通域
 	void getConnectedComponent(Mat &binary, Point initialPoint, ConnectedComponent &cc);
@@ -51,6 +55,11 @@ public:
 	Mat getDstLeft() { return dstLeft; }
 	Mat getDstRight() { return dstRight; }
 
+	Mat getCornerLeft() { return cornerLeft; }
+	Mat getCornerRight() { return cornerRight; }
+
+	Mat getTestImage() { return testImage; }
+
 private:
 	Mat fgMaskLeft;
 	Mat fgMaskRight;
@@ -58,10 +67,18 @@ private:
 	Mat fgImageRight;
 	Mat dstLeft;
 	Mat dstRight;
+	Mat cornerLeft;
+	Mat cornerRight;
+	Mat mtdCornerLeft;
+	Mat mtdCornerRight;
 
 	Ptr<BackgroundSubtractor> bgModel;
 
 	Mat element;
+
+	Vec4d locationVec;
+
+	Mat testImage;
 };
 
 #endif //_SHUTTLECOCK_RECOGNIZER_H

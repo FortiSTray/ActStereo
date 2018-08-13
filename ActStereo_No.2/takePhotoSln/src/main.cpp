@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
 
 	int keyStatus = 0;
 	int counter = 0;
-	const int photoNum = 30;
+	const int photoNum = 40;
 	char fileNameL[25];
 	char fileNameR[25];
 
