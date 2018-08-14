@@ -2,6 +2,9 @@
 #define _SHUTTLECOCK_RECOGNIZER_H
 
 #include "mv_stereo.h"
+#include "opencv2/xfeatures2d.hpp"
+
+using namespace cv::xfeatures2d;
 
 typedef bool STATUS;
 
@@ -26,28 +29,25 @@ typedef struct
 
 } ConnectedComponent;
 
-class ShuttleRecognizer : public MVStereo
+class ShuttlecockRecognizer : public MVStereo
 {
 public:
-	ShuttleRecognizer() {}
-	explicit ShuttleRecognizer(char* camNameL, CameraArguments argsLeft, char* camNameR, CameraArguments argsRight);
-	ShuttleRecognizer(const ShuttleRecognizer&) = delete;
-	ShuttleRecognizer& operator=(const ShuttleRecognizer&) = delete;
-	virtual ~ShuttleRecognizer() {}
+	ShuttlecockRecognizer() {}
+	explicit ShuttlecockRecognizer(char* camNameL, CameraArguments argsLeft, char* camNameR, CameraArguments argsRight);
+	ShuttlecockRecognizer(const ShuttlecockRecognizer&) = delete;
+	ShuttlecockRecognizer& operator=(const ShuttlecockRecognizer&) = delete;
+	virtual ~ShuttlecockRecognizer() {}
 
 	//背景减除
 	void backgroundSubtract();
 
-	void preProc();
-
-	void detectCorner(Mat &image, Mat &cornerImage, Size coreSize, int thresh = 1);
-	
-	void matchFeaturePoints(Mat &imageLeft, Mat &imageRight, Size windowSize, int yRange = 3, int thresh = 10);
+	void preProcessing();
 
 	//以一个点为种子点获取连通域
 	void getConnectedComponent(Mat &binary, Point initialPoint, ConnectedComponent &cc);
 
-	STATUS findMatchedPoints(Mat &binLeft, ConnectedComponent &scLeft, Mat &binRight, ConnectedComponent &scRight);
+	//hsv空间绣球检测
+	bool shuttlecockDetection();
 
 	Mat getFgImageLeft() { return fgImageLeft; }
 	Mat getFgImageRight() { return fgImageRight; }

@@ -1,6 +1,6 @@
 #include "shuttlecock_recognizer.h"
 
-ShuttleRecognizer::ShuttleRecognizer(char* camNameL, CameraArguments argsLeft, char* camNameR, CameraArguments argsRight) :
+ShuttlecockRecognizer::ShuttlecockRecognizer(char* camNameL, CameraArguments argsLeft, char* camNameR, CameraArguments argsRight) :
 	MVStereo(camNameL, argsLeft, camNameR, argsRight)
 {
 	bgModel = createBackgroundSubtractorMOG2(500, 16.0, false).dynamicCast<BackgroundSubtractor>();
@@ -11,10 +11,10 @@ ShuttleRecognizer::ShuttleRecognizer(char* camNameL, CameraArguments argsLeft, c
 	cornerRight = Mat::zeros(SRC_ROWS, SRC_COLS, CV_8UC1);
 }
 
-void ShuttleRecognizer::backgroundSubtract()
+void ShuttlecockRecognizer::backgroundSubtract()
 {
-	bgModel->apply(getFrameLeft(), fgMaskLeft, 0.005);
-	bgModel->apply(getFrameRight(), fgMaskRight, 0.005);
+	bgModel->apply(getFrameLeft(), fgMaskLeft, 0.001);
+	bgModel->apply(getFrameRight(), fgMaskRight, 0.001);
 
 	//Filter
 	//GaussianBlur(fgMaskLeft, fgMaskLeft, Size(11, 11), 3.5, 3.5);
@@ -27,12 +27,15 @@ void ShuttleRecognizer::backgroundSubtract()
 	fgImageRight = Scalar::all(0);
 	getFrameRight().copyTo(fgImageRight, fgMaskRight);
 
-	//imshow("LeftFg", fgImageLeft);
-	//imshow("RightFg", fgImageRight);
+	imshow("LeftFg", fgImageLeft);
+	imshow("RightFg", fgImageRight);
 }
 
-void ShuttleRecognizer::preProc()
+void ShuttlecockRecognizer::preProcessing()
 {
+	cvtColor(fgImageLeft, fgImageLeft, CV_BGR2GRAY);
+	cvtColor(fgImageRight, fgImageRight, CV_BGR2GRAY);
+
 	//dilate(fgImageLeft, fgImageLeft, element, Point(-1, -1), 3);
 	//erode(fgImageLeft, fgImageLeft, element, Point(-1, -1), 6);
 	//dilate(fgImageLeft, fgImageLeft, element, Point(-1, -1), 3);
@@ -41,76 +44,14 @@ void ShuttleRecognizer::preProc()
 	//erode(fgImageRight, fgImageRight, element, Point(-1, -1), 6);
 	//dilate(fgImageRight, fgImageRight, element, Point(-1, -1), 3);
 
-	medianBlur(fgImageLeft, fgImageLeft, 3);
-	medianBlur(fgImageRight, fgImageRight, 3);
+	//medianBlur(fgImageLeft, fgImageLeft, 3);
+	//medianBlur(fgImageRight, fgImageRight, 3);
 
-	cvtColor(fgImageLeft, dstLeft, CV_BGR2GRAY);
-	cvtColor(fgImageRight, dstRight, CV_BGR2GRAY);
-
-	threshold(dstLeft, dstLeft, 0, 255, THRESH_BINARY);
-	threshold(dstRight, dstRight, 0, 255, THRESH_BINARY);
+	//threshold(fgImageLeft, dstLeft, 0, 255, THRESH_BINARY);
+	//threshold(fgImageRight, dstRight, 0, 255, THRESH_BINARY);
 }
 
-void ShuttleRecognizer::detectCorner(Mat &image, Mat &cornerImage, Size coreSize, int thresh)
-{
-	cornerImage = Mat::zeros(image.rows, image.cols, CV_8UC1);
-
-	for (auto i = coreSize.height / 2; i < image.rows - coreSize.height / 2; i++)
-		for (auto j = coreSize.width / 2; j < image.cols - coreSize.width / 2; j++)
-		{
-			int pixelCnt = 0;
-
-			for (auto m = i - coreSize.height / 2; m <= i + coreSize.height / 2; m++)
-				for (auto n = j - coreSize.width / 2; n <= j + coreSize.width / 2; n++)
-				{
-					if (image.ptr<uchar>(m)[n] != image.ptr<uchar>(i)[j]) { pixelCnt++; }
-				}
-
-			if (pixelCnt >= (coreSize.height * coreSize.width) / 2 + thresh)
-			{
-				circle(cornerImage, Point(j, i), 0, 255);
-			}
-		}
-}
-
-void ShuttleRecognizer::matchFeaturePoints(Mat &imageLeft, Mat &imageRight, Size windowSize, int yRange, int thresh)
-{
-	cvtColor(dstLeft, mtdCornerLeft, CV_GRAY2BGR);
-	cvtColor(dstRight, mtdCornerRight, CV_GRAY2BGR);
-
-	//Left image
-	for (auto i = windowSize.height / 2 + yRange / 2; i < imageLeft.rows - windowSize.height / 2 - yRange / 2; i++)
-		for (auto j = windowSize.width / 2; j < imageLeft.cols - windowSize.width / 2; j++)
-			if (imageLeft.ptr<uchar>(i)[j] == 255)
-			{
-				//Right image
-				for (auto m = i - yRange / 2; m <= i + yRange / 2; m++)
-					for (auto n = windowSize.width / 2; n < imageLeft.cols - windowSize.width / 2; n++)
-						if (imageRight.ptr<uchar>(m)[n] == 255)
-						{
-							int pixelCnt = 0;
-
-							//Traversal window
-							for (auto p = -windowSize.height / 2; p <= windowSize.height / 2; p++)
-								for (auto q = -windowSize.width / 2; q <= windowSize.width / 2; q++)
-									if (dstLeft.ptr<uchar>(i + p)[j + q] == dstRight.ptr<uchar>(m + p)[n + q])
-									{ 
-										pixelCnt++; 
-									}
-
-							if (pixelCnt >= thresh)
-							{
-								circle(mtdCornerLeft, Point(j, i), 3, Scalar(0, 0, 255), 2);
-								circle(mtdCornerRight, Point(n, m), 3, Scalar(0, 0, 255), 2);
-							}
-						}
-			}
-
-	imshow("mtdL", mtdCornerLeft);
-	imshow("mtdR", mtdCornerRight);
-}
-
-void ShuttleRecognizer::getConnectedComponent(Mat &binary, Point initialPoint, ConnectedComponent &cc)
+void ShuttlecockRecognizer::getConnectedComponent(Mat &binary, Point initialPoint, ConnectedComponent &cc)
 {
 	std::vector<Point> stkPoint;
 	unsigned int counter = 0;
@@ -173,77 +114,53 @@ void ShuttleRecognizer::getConnectedComponent(Mat &binary, Point initialPoint, C
 	cc.outerRect = ccOuterRect;
 }
 
-
-STATUS ShuttleRecognizer::findMatchedPoints(Mat &binLeft, ConnectedComponent &scLeft, Mat &binRight, ConnectedComponent &scRight)
+bool ShuttlecockRecognizer::shuttlecockDetection()
 {
-	auto binaryLeft = binLeft.clone();
-	auto binaryRight = binRight.clone();
-	Point crtPoint = Point(-1, -1);
-	vector<ConnectedComponent> ccsLeft;
-	ConnectedComponent tmpCC;
-	unsigned int ccCounter = 0;
+	Mat img1 = fgImageLeft;
+	Mat img2 = fgImageRight;
 
-	for (auto i = 0; i < binaryLeft.rows; ++i)
+	//-- Step 1: Detect the keypoints using SURF Detector, compute the descriptors
+	int minHessian = 400;
+	Ptr<SURF> detector = SURF::create(minHessian);
+	std::vector<KeyPoint> keypoints1, keypoints2;
+	Mat descriptors1, descriptors2;
+
+	detector->detectAndCompute(img1, noArray(), keypoints1, descriptors1);
+	detector->detectAndCompute(img2, noArray(), keypoints2, descriptors2);
+
+	//-- Need to check descriptors
+	if (descriptors1.rows <= 1 || descriptors2.rows <= 1)
 	{
-		for (auto j = 0; j < binaryLeft.cols; ++j)
-		{
-			if (binaryLeft.ptr(i)[j] == 255)
-			{
-				binaryLeft.ptr(i)[j] = 150;
-				crtPoint = Point(j, i);
-			}
+		cout << "Descriptors Empty" << endl;
+		imshow("testL", img1);
+		imshow("testR", img2);
+		return false;
+	}
 
-			if (crtPoint != Point(-1, -1))
-			{
-				getConnectedComponent(binaryLeft, crtPoint, tmpCC);
-				if ((tmpCC.outerRect.xMax - tmpCC.outerRect.xMin) < 2 * (tmpCC.outerRect.yMax - tmpCC.outerRect.yMin) &&
-					(tmpCC.outerRect.yMax - tmpCC.outerRect.yMin) < 3 * (tmpCC.outerRect.xMax - tmpCC.outerRect.xMin) &&
-					tmpCC.outerRect.yMax - tmpCC.outerRect.yMin < 200 && tmpCC.outerRect.xMax - tmpCC.outerRect.xMin < 120 && 
-					tmpCC.size >= 30)
-				{
-					ccsLeft.push_back(tmpCC); 
-				}
-				crtPoint = Point(-1, -1);
-			}
+	//-- Step 2: Matching descriptor vectors with a FLANN based matcher
+	// Since SURF is a floating-point descriptor NORM_L2 is used
+	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
+	std::vector<std::vector<DMatch>> knn_matches;
+	matcher->knnMatch(descriptors1, descriptors2, knn_matches, 2);
+
+	//-- Filter matches using the Lowe's ratio test
+	const float ratio_thresh = 0.7f;
+	std::vector<DMatch> good_matches;
+	for (size_t i = 0; i < knn_matches.size(); i++)
+	{
+		if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance)
+		{
+			good_matches.push_back(knn_matches[i][0]);
 		}
 	}
 
-	while (!ccsLeft.empty())
-	{
-		auto refCore = ccsLeft.back().core;
-		for (int i = 0; i < 640; i++)
-		{
-			if (binaryRight.ptr(refCore.y)[i] == 255)
-			{
-				binaryLeft.ptr(refCore.y)[i] = 150;
-				crtPoint = Point(i, refCore.y);
-			}
+	//-- Draw matches
+	Mat img_matches;
+	drawMatches(img1, keypoints1, img2, keypoints2, good_matches, img_matches, Scalar::all(-1),
+		Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
 
-			if (crtPoint != Point(-1, -1))
-			{
-				getConnectedComponent(binaryRight, crtPoint, tmpCC);
+	//-- Show detected matches
+	imshow("Good Matches", img_matches);
 
-				if (tmpCC.size / ccsLeft.back().size < 3 && ccsLeft.back().size / tmpCC.size < 3)
-				{
-					locationVec = simulatedLocating(refCore.y, refCore.x, tmpCC.core.y, tmpCC.core.x);
-					if (locationVec[0] < 500 && locationVec[0] > -500 && locationVec[1] < 4000 && locationVec[2] > 0 && locationVec[2] < 10000)
-					{
-						scLeft = ccsLeft.back();
-						scRight = tmpCC;
-
-						//cout << "L  " << ccsLeft.back().size << "  " << ccsLeft.back().core << endl;
-						//cout << "R  " << tmpCC.size << "  " << tmpCC.core << endl;
-
-						return true;
-					}
-				}
-
-				crtPoint = Point(-1, -1);
-			}
-		}
-
-		ccsLeft.pop_back();
-	}
-
-	return false;
+	return true;
 }
