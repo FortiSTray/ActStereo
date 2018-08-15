@@ -36,19 +36,8 @@ void ShuttlecockRecognizer::preProcessing()
 	cvtColor(fgImageLeft, fgImageLeft, CV_BGR2GRAY);
 	cvtColor(fgImageRight, fgImageRight, CV_BGR2GRAY);
 
-	//dilate(fgImageLeft, fgImageLeft, element, Point(-1, -1), 3);
-	//erode(fgImageLeft, fgImageLeft, element, Point(-1, -1), 6);
-	//dilate(fgImageLeft, fgImageLeft, element, Point(-1, -1), 3);
-
-	//dilate(fgImageRight, fgImageRight, element, Point(-1, -1), 3);
-	//erode(fgImageRight, fgImageRight, element, Point(-1, -1), 6);
-	//dilate(fgImageRight, fgImageRight, element, Point(-1, -1), 3);
-
-	//medianBlur(fgImageLeft, fgImageLeft, 3);
-	//medianBlur(fgImageRight, fgImageRight, 3);
-
-	//threshold(fgImageLeft, dstLeft, 0, 255, THRESH_BINARY);
-	//threshold(fgImageRight, dstRight, 0, 255, THRESH_BINARY);
+	medianBlur(fgImageLeft, fgImageLeft, 3);
+	medianBlur(fgImageRight, fgImageRight, 3);
 }
 
 void ShuttlecockRecognizer::getConnectedComponent(Mat &binary, Point initialPoint, ConnectedComponent &cc)
@@ -114,53 +103,124 @@ void ShuttlecockRecognizer::getConnectedComponent(Mat &binary, Point initialPoin
 	cc.outerRect = ccOuterRect;
 }
 
-bool ShuttlecockRecognizer::shuttlecockDetection()
+bool ShuttlecockRecognizer::shuttlecockDetection(Size windowSize, int yRange, int thresh)
 {
 	Mat img1 = fgImageLeft;
 	Mat img2 = fgImageRight;
+
+	vector<MatchedPoint> mtdPoints;
+	MatchedPoint tmpMtdPoint;
 
 	//-- Step 1: Detect the keypoints using SURF Detector, compute the descriptors
 	int minHessian = 400;
 	Ptr<SURF> detector = SURF::create(minHessian);
 	std::vector<KeyPoint> keypoints1, keypoints2;
-	Mat descriptors1, descriptors2;
 
-	detector->detectAndCompute(img1, noArray(), keypoints1, descriptors1);
-	detector->detectAndCompute(img2, noArray(), keypoints2, descriptors2);
+	detector->detect(img1, keypoints1);
+	detector->detect(img2, keypoints2);
 
-	//-- Need to check descriptors
-	if (descriptors1.rows <= 1 || descriptors2.rows <= 1)
-	{
-		cout << "Descriptors Empty" << endl;
-		imshow("testL", img1);
-		imshow("testR", img2);
-		return false;
-	}
+	//-- Draw keypoints
+	Mat img1_keypoints, img2_keypoints;
+	drawKeypoints(img1, keypoints1, img1_keypoints);
+	drawKeypoints(img2, keypoints2, img2_keypoints);
 
-	//-- Step 2: Matching descriptor vectors with a FLANN based matcher
-	// Since SURF is a floating-point descriptor NORM_L2 is used
-	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
-	std::vector<std::vector<DMatch>> knn_matches;
-	matcher->knnMatch(descriptors1, descriptors2, knn_matches, 2);
+	//-- Show detected (drawn) keypoints
+	imshow("SURF Keypoints1", img1_keypoints);
+	imshow("SURF Keypoints2", img2_keypoints);
 
-	//-- Filter matches using the Lowe's ratio test
-	const float ratio_thresh = 0.7f;
-	std::vector<DMatch> good_matches;
-	for (size_t i = 0; i < knn_matches.size(); i++)
-	{
-		if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance)
+	cvtColor(img1, mtdCornerLeft, CV_GRAY2BGR);
+	cvtColor(img2, mtdCornerRight, CV_GRAY2BGR);
+
+	for (auto i = 0; i < keypoints1.size(); i++)
+		for (auto j = 0; j < keypoints2.size(); j++)
 		{
-			good_matches.push_back(knn_matches[i][0]);
+			Point2i point1 = static_cast<Point2i>(keypoints1[i].pt);
+			Point2i point2 = static_cast<Point2i>(keypoints2[j].pt);
+
+			if (fabs(point1.y - point2.y) <= yRange &&
+				point1.y >= windowSize.height / 2 && point1.y < img1.rows - windowSize.height / 2 &&
+				point1.x >= windowSize.width / 2 && point1.x < img1.cols - windowSize.width / 2 &&
+				point2.y >= windowSize.height / 2 && point2.y < img2.rows - windowSize.height / 2 &&
+				point2.x >= windowSize.width / 2 && point2.x < img2.cols - windowSize.width / 2)
+			{
+				int pixelCnt = 0;
+
+				//-- Traversal window
+				for (auto p = -windowSize.height / 2; p <= windowSize.height / 2; p++)
+					for (auto q = -windowSize.width / 2; q <= windowSize.width / 2; q++)
+						if (img1.ptr<uchar>(point1.y + p)[point1.x + q] && img2.ptr<uchar>(point2.y + p)[point2.x + q])
+						{
+							pixelCnt++;
+						}
+
+				if (pixelCnt >= thresh)
+				{
+					//circle(mtdCornerLeft, point1, 3, Scalar(0, 0, 255), 2);
+					//circle(mtdCornerRight, point2, 3, Scalar(0, 0, 255), 2);
+
+					tmpMtdPoint.pointLeft = point1;
+					tmpMtdPoint.pointRight = point2;
+					tmpMtdPoint.disparity = point1.x - point2.x;
+					mtdPoints.push_back(tmpMtdPoint);
+
+					break;
+				}
+			}
+		}
+
+	//-- Draw object window
+	vector<ObjectRect> objRects;
+	bool objectFound = false;
+
+	for (auto i = 0; i < mtdPoints.size(); i++)
+	{
+		circle(mtdCornerLeft, mtdPoints[i].pointLeft, 3, Scalar(0, 0, 255), 2);
+		circle(mtdCornerRight, mtdPoints[i].pointRight, 3, Scalar(0, 0, 255), 2);
+
+		objectFound = false;
+
+		for (auto j = 0; j < objRects.size(); j++)
+		{
+			if (abs(mtdPoints[i].disparity - objRects[j].disparity) < 35)
+			{
+#define PASS(max, min) do { if (max < min) { int tmp = max; max = min; min = tmp; } } while(0)
+
+				PASS(objRects[j].yMax, mtdPoints[i].pointLeft.y);
+				PASS(objRects[j].xMax, mtdPoints[i].pointLeft.x);
+				PASS(mtdPoints[i].pointLeft.y, objRects[j].yMin);
+				PASS(mtdPoints[i].pointLeft.x, objRects[j].xMin);
+				objRects[j].pointNum++;
+
+#undef PASS
+				objectFound = true;
+				break;
+			}
+		}
+
+		if (objectFound == false)
+		{
+			ObjectRect tmpObjRect(mtdPoints[i].pointLeft.x, mtdPoints[i].pointLeft.x, mtdPoints[i].pointLeft.y, mtdPoints[i].pointLeft.y);
+			tmpObjRect.disparity = mtdPoints[i].disparity;
+			tmpObjRect.pointNum = 1;
+			objRects.push_back(tmpObjRect);
 		}
 	}
 
-	//-- Draw matches
-	Mat img_matches;
-	drawMatches(img1, keypoints1, img2, keypoints2, good_matches, img_matches, Scalar::all(-1),
-		Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+	for (auto i = 0; i < objRects.size(); i++)
+	{
+		if (objRects[i].pointNum <= 10) { continue; }
 
-	//-- Show detected matches
-	imshow("Good Matches", img_matches);
+		line(mtdCornerLeft, Point(objRects[i].xMin, objRects[i].yMin), Point(objRects[i].xMax, objRects[i].yMin), Scalar(0, 255, 0), 2);
+		line(mtdCornerLeft, Point(objRects[i].xMax, objRects[i].yMin), Point(objRects[i].xMax, objRects[i].yMax), Scalar(0, 255, 0), 2);
+		line(mtdCornerLeft, Point(objRects[i].xMax, objRects[i].yMax), Point(objRects[i].xMin, objRects[i].yMax), Scalar(0, 255, 0), 2);
+		line(mtdCornerLeft, Point(objRects[i].xMin, objRects[i].yMax), Point(objRects[i].xMin, objRects[i].yMin), Scalar(0, 255, 0), 2);
+	}
 
+
+	imshow("mtdL", mtdCornerLeft);
+	imshow("mtdR", mtdCornerRight);
+
+	std::vector< DMatch > matches;
+	
 	return true;
 }

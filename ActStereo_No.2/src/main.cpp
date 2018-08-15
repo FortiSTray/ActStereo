@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
 		actStereoNo_1.backgroundSubtract();
 		actStereoNo_1.preProcessing();
 
-		actStereoNo_1.shuttlecockDetection();
+		actStereoNo_1.shuttlecockDetection(Size(7, 7), 1, 47);
 
 		switch (status)
 		{

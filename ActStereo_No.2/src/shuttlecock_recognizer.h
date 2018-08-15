@@ -29,6 +29,30 @@ typedef struct
 
 } ConnectedComponent;
 
+//-- Matched Points
+typedef struct
+{
+	Point2i pointLeft;
+	Point2i pointRight;
+	int		disparity;
+
+} MatchedPoint;
+
+//-- Object Rect
+struct ObjectRect
+{
+	ObjectRect() {}
+	ObjectRect(int l, int r, int u, int d) : xMin(l), xMax(r), yMin(u), yMax(d) {}
+
+	int xMin = SRC_COLS;
+	int xMax = 0;
+	int yMin = SRC_ROWS;
+	int yMax = 0;
+
+	int disparity;
+	int pointNum;
+};
+
 class ShuttlecockRecognizer : public MVStereo
 {
 public:
@@ -46,8 +70,8 @@ public:
 	//以一个点为种子点获取连通域
 	void getConnectedComponent(Mat &binary, Point initialPoint, ConnectedComponent &cc);
 
-	//hsv空间绣球检测
-	bool shuttlecockDetection();
+	//绣球检测
+	bool shuttlecockDetection(Size windowSize, int yRange, int thresh);
 
 	Mat getFgImageLeft() { return fgImageLeft; }
 	Mat getFgImageRight() { return fgImageRight; }
