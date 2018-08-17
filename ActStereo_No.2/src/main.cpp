@@ -1,5 +1,4 @@
 #include <iostream>
-#include <fstream>
 #include "opencv2/opencv.hpp"
 #include "shuttlecock_recognizer.h"
 #include "timer.h"
@@ -10,17 +9,12 @@ using namespace cv;
 #define DETECTION	0
 #define TRACKING	1
 
+//-- Global Status
 bool status = 0;
 int keyStatus;
+
+//-- Timer
 Timer periodTimer;
-
-ConnectedComponent shuttlecockL;
-ConnectedComponent shuttlecockR;
-
-bool isPointsFound = false;
-
-Mat tmpLeft;
-Mat tmpRight;
 
 int main(int argc, char* argv[])
 {
@@ -35,26 +29,25 @@ int main(int argc, char* argv[])
 		imshow("RightSrc", actStereoNo_1.getFrameRight());
 
 		actStereoNo_1.backgroundSubtract();
-		actStereoNo_1.preProcessing();
+		actStereoNo_1.preprocess();
 
-		actStereoNo_1.shuttlecockDetection(Size(7, 7), 1, 47);
-
+		//-- Detection & Tracking
 		switch (status)
 		{
 		case DETECTION:
+			if (actStereoNo_1.shuttlecockDetection(Size(7, 7), 1, 47) == true) { status = TRACKING; }
+			cout << "Detecting" << endl;
+
 			break;
 
 		case TRACKING:
-			break;
-
-		default:
+			if (actStereoNo_1.shuttlecockTracking() == false) { status = DETECTION; }
+			cout << "Tracking" << endl;
+			
 			break;
 		}
 
-		//imshow("Left", actStereoNo_1.getDstLeft());
-		//imshow("Right", actStereoNo_1.getDstRight());
-
-		//if push down Esc, kill the progress
+		//-- If key Esc is pushed down, kill the progress
 		keyStatus = waitKey(1);
 		if (keyStatus == 0x1B)
 		{

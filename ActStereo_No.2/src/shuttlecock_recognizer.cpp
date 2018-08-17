@@ -1,163 +1,122 @@
 #include "shuttlecock_recognizer.h"
 
+/**
+* @brief  该类的一种重载构造函数
+* @param  camNameL 左相机名称
+* @param  argsLeft 左相机内参
+* @param  camNameL 右相机名称
+* @param  argsLeft 右相机内参
+* @return None
+* @note   继承自MVStereo类，调用MVStereo类的构造函数，并为ShuttlecockRecognizer类中用到的的一些变量赋值
+* @author ST42_Action (Liang Chen)
+*/
 ShuttlecockRecognizer::ShuttlecockRecognizer(char* camNameL, CameraArguments argsLeft, char* camNameR, CameraArguments argsRight) :
 	MVStereo(camNameL, argsLeft, camNameR, argsRight)
 {
 	bgModel = createBackgroundSubtractorMOG2(500, 16.0, false).dynamicCast<BackgroundSubtractor>();
 
 	element = getStructuringElement(MORPH_RECT, Size(3, 3));
-
-	cornerLeft = Mat::zeros(SRC_ROWS, SRC_COLS, CV_8UC1);
-	cornerRight = Mat::zeros(SRC_ROWS, SRC_COLS, CV_8UC1);
 }
 
+/**
+* @brief  背景减除
+* @param  None
+* @return None
+* @note   进行背景减除操作，生成前景图像
+* @author ST42_Action (Liang Chen)
+*/
 void ShuttlecockRecognizer::backgroundSubtract()
 {
-	bgModel->apply(getFrameLeft(), fgMaskLeft, 0.001);
-	bgModel->apply(getFrameRight(), fgMaskRight, 0.001);
-
-	//Filter
-	//GaussianBlur(fgMaskLeft, fgMaskLeft, Size(11, 11), 3.5, 3.5);
-	threshold(fgMaskLeft, fgMaskLeft, 10, 255, THRESH_BINARY);
-	//GaussianBlur(fgMaskRight, fgMaskRight, Size(11, 11), 3.5, 3.5);
-	threshold(fgMaskRight, fgMaskRight, 10, 255, THRESH_BINARY);
+	bgModel->apply(getFrameLeft(), fgMaskLeft, 0.01);
+	bgModel->apply(getFrameRight(), fgMaskRight, 0.01);
 
 	fgImageLeft = Scalar::all(0);
-	getFrameLeft().copyTo(fgImageLeft, fgMaskLeft);
 	fgImageRight = Scalar::all(0);
+
+	getFrameLeft().copyTo(fgImageLeft, fgMaskLeft);
 	getFrameRight().copyTo(fgImageRight, fgMaskRight);
 
 	imshow("LeftFg", fgImageLeft);
 	imshow("RightFg", fgImageRight);
 }
 
-void ShuttlecockRecognizer::preProcessing()
+/**
+* @brief  图像预处理
+* @param  None
+* @return None
+* @note   对要操作的图像进行初步的处理与滤波
+* @author ST42_Action (Liang Chen)
+*/
+void ShuttlecockRecognizer::preprocess()
 {
-	cvtColor(fgImageLeft, fgImageLeft, CV_BGR2GRAY);
-	cvtColor(fgImageRight, fgImageRight, CV_BGR2GRAY);
+	cvtColor(fgImageLeft, fgGrayLeft, CV_BGR2GRAY);
+	cvtColor(fgImageRight, fgGrayRight, CV_BGR2GRAY);
 
-	medianBlur(fgImageLeft, fgImageLeft, 3);
-	medianBlur(fgImageRight, fgImageRight, 3);
+	medianBlur(fgGrayLeft, fgGrayLeft, 3);
+	medianBlur(fgGrayRight, fgGrayRight, 3);
 }
 
-void ShuttlecockRecognizer::getConnectedComponent(Mat &binary, Point initialPoint, ConnectedComponent &cc)
+/**
+* @brief  绣球检测
+* @param  windowSize 用于左右特征点匹配的窗口大小
+* @param  yRange 左右图像进行极线对齐时y坐标允许的误差
+* @param  thresh 匹配窗口匹配像素点数量的阈值
+* @return STATUS类型，用于判断是否成功检测到目标窗口
+* @note   使用SURF特征检测左右图像的特征点，并利用双目相机左右图像极线对齐的特点进行图像匹配，进一步对绣球进行
+* @author ST42_Action (Liang Chen)
+*/
+STATUS ShuttlecockRecognizer::shuttlecockDetection(Size windowSize, int yRange, int thresh)
 {
-	std::vector<Point> stkPoint;
-	unsigned int counter = 0;
-	unsigned long long coreX = 0;
-	unsigned long long coreY = 0;
-	outerRect ccOuterRect(640, 0, 480, 0);
-
-	stkPoint.push_back(initialPoint);
-
-	//if find a white point connected, which means there are element in stkPoint
-	while (!stkPoint.empty())
-	{
-		auto pix = stkPoint.back();
-
-		stkPoint.pop_back();
-		counter++;
-		coreX += pix.x;
-		coreY += pix.y;
-		ccOuterRect.xMin = pix.x < ccOuterRect.xMin ? pix.x : ccOuterRect.xMin;
-		ccOuterRect.xMax = pix.x > ccOuterRect.xMax ? pix.x : ccOuterRect.xMax;
-		ccOuterRect.yMin = pix.y < ccOuterRect.yMin ? pix.y : ccOuterRect.yMin;
-		ccOuterRect.yMax = pix.y > ccOuterRect.yMax ? pix.y : ccOuterRect.yMax;
-
-		auto row_0 = pix.y - 1, row_1 = pix.y, row_2 = pix.y + 1;
-		auto col_0 = pix.x - 1, col_1 = pix.x, col_2 = pix.x + 1;
-
-#define PASS(x, y)  do { binary.ptr(y)[x] = 150; stkPoint.push_back({x, y}); } while (0)
-
-		//row_0
-		if (row_0 >= 0 && col_0 >= 0 && binary.ptr(row_0)[col_0] == 255)
-			PASS(col_0, row_0);
-		if (row_0 >= 0 && binary.ptr(row_0)[col_1] == 255)
-			PASS(col_1, row_0);
-		if (row_0 >= 0 && col_2 < binary.cols && binary.ptr(row_0)[col_2] == 255)
-			PASS(col_2, row_0);
-
-		//row_1
-		if (col_0 >= 0 && binary.ptr(row_1)[col_0] == 255)
-			PASS(col_0, row_1);
-		if (col_2 < binary.cols && binary.ptr(row_1)[col_2] == 255)
-			PASS(col_2, row_1);
-
-		//row_2
-		if (row_2 < binary.rows && col_0 >= 0 && binary.ptr(row_2)[col_0] == 255)
-			PASS(col_0, row_2);
-		if (row_2 < binary.rows && binary.ptr(row_2)[col_1] == 255)
-			PASS(col_1, row_2);
-		if (row_2 < binary.rows && col_2 < binary.cols && binary.ptr(row_2)[col_2] == 255)
-			PASS(col_2, row_2);
-
-#undef PASS
-
-	}
-
-	coreX /= counter;
-	coreY /= counter;
-	cc.core = Point((int)coreX, (int)coreY);
-
-	cc.size = counter;
-	cc.outerRect = ccOuterRect;
-}
-
-bool ShuttlecockRecognizer::shuttlecockDetection(Size windowSize, int yRange, int thresh)
-{
-	Mat img1 = fgImageLeft;
-	Mat img2 = fgImageRight;
+	Mat imageLeft = fgGrayLeft;
+	Mat imageRight = fgGrayRight;
 
 	vector<MatchedPoint> mtdPoints;
 	MatchedPoint tmpMtdPoint;
 
-	//-- Step 1: Detect the keypoints using SURF Detector, compute the descriptors
+	//-- Detect the keypoints using SURF Detector
 	int minHessian = 400;
 	Ptr<SURF> detector = SURF::create(minHessian);
-	std::vector<KeyPoint> keypoints1, keypoints2;
+	std::vector<KeyPoint> keypointsL, keypointsR;
 
-	detector->detect(img1, keypoints1);
-	detector->detect(img2, keypoints2);
+	detector->detect(imageLeft, keypointsL);
+	detector->detect(imageRight, keypointsR);
 
 	//-- Draw keypoints
-	Mat img1_keypoints, img2_keypoints;
-	drawKeypoints(img1, keypoints1, img1_keypoints);
-	drawKeypoints(img2, keypoints2, img2_keypoints);
+	Mat kpImageLeft, kpImageRight;
+	drawKeypoints(imageLeft, keypointsL, kpImageLeft);
+	drawKeypoints(imageRight, keypointsR, kpImageRight);
 
-	//-- Show detected (drawn) keypoints
-	imshow("SURF Keypoints1", img1_keypoints);
-	imshow("SURF Keypoints2", img2_keypoints);
+	//-- Show detected keypoints
+	imshow("SURF Keypoints Left", kpImageLeft);
+	imshow("SURF Keypoints Right", kpImageRight);
 
-	cvtColor(img1, mtdCornerLeft, CV_GRAY2BGR);
-	cvtColor(img2, mtdCornerRight, CV_GRAY2BGR);
+	fgImageLeft.copyTo(mtdCornerLeft);
+	fgImageRight.copyTo(mtdCornerRight);
 
-	for (auto i = 0; i < keypoints1.size(); i++)
-		for (auto j = 0; j < keypoints2.size(); j++)
+	for (size_t i = 0; i < keypointsL.size(); i++)
+		for (size_t j = 0; j < keypointsR.size(); j++)
 		{
-			Point2i point1 = static_cast<Point2i>(keypoints1[i].pt);
-			Point2i point2 = static_cast<Point2i>(keypoints2[j].pt);
+			Point2i point1 = static_cast<Point2i>(keypointsL[i].pt);
+			Point2i point2 = static_cast<Point2i>(keypointsR[j].pt);
 
 			if (fabs(point1.y - point2.y) <= yRange &&
-				point1.y >= windowSize.height / 2 && point1.y < img1.rows - windowSize.height / 2 &&
-				point1.x >= windowSize.width / 2 && point1.x < img1.cols - windowSize.width / 2 &&
-				point2.y >= windowSize.height / 2 && point2.y < img2.rows - windowSize.height / 2 &&
-				point2.x >= windowSize.width / 2 && point2.x < img2.cols - windowSize.width / 2)
+				point1.y >= windowSize.height / 2 && point1.y < imageLeft.rows  - windowSize.height / 2 &&
+				point1.x >= windowSize.width  / 2 && point1.x < imageLeft.cols  - windowSize.width  / 2 &&
+				point2.y >= windowSize.height / 2 && point2.y < imageRight.rows - windowSize.height / 2 &&
+				point2.x >= windowSize.width  / 2 && point2.x < imageRight.cols - windowSize.width  / 2)
 			{
 				int pixelCnt = 0;
 
 				//-- Traversal window
 				for (auto p = -windowSize.height / 2; p <= windowSize.height / 2; p++)
 					for (auto q = -windowSize.width / 2; q <= windowSize.width / 2; q++)
-						if (img1.ptr<uchar>(point1.y + p)[point1.x + q] && img2.ptr<uchar>(point2.y + p)[point2.x + q])
+						if (imageLeft.ptr<uchar>(point1.y + p)[point1.x + q] && imageRight.ptr<uchar>(point2.y + p)[point2.x + q])
 						{
 							pixelCnt++;
 						}
 
 				if (pixelCnt >= thresh)
 				{
-					//circle(mtdCornerLeft, point1, 3, Scalar(0, 0, 255), 2);
-					//circle(mtdCornerRight, point2, 3, Scalar(0, 0, 255), 2);
-
 					tmpMtdPoint.pointLeft = point1;
 					tmpMtdPoint.pointRight = point2;
 					tmpMtdPoint.disparity = point1.x - point2.x;
@@ -172,26 +131,23 @@ bool ShuttlecockRecognizer::shuttlecockDetection(Size windowSize, int yRange, in
 	vector<ObjectRect> objRects;
 	bool objectFound = false;
 
-	for (auto i = 0; i < mtdPoints.size(); i++)
+	for (size_t i = 0; i < mtdPoints.size(); i++)
 	{
 		circle(mtdCornerLeft, mtdPoints[i].pointLeft, 3, Scalar(0, 0, 255), 2);
 		circle(mtdCornerRight, mtdPoints[i].pointRight, 3, Scalar(0, 0, 255), 2);
 
 		objectFound = false;
 
-		for (auto j = 0; j < objRects.size(); j++)
+		for (size_t j = 0; j < objRects.size(); j++)
 		{
 			if (abs(mtdPoints[i].disparity - objRects[j].disparity) < 35)
 			{
-#define PASS(max, min) do { if (max < min) { int tmp = max; max = min; min = tmp; } } while(0)
+				objRects[j].yMax = MAX(objRects[j].yMax, mtdPoints[i].pointLeft.y);
+				objRects[j].xMax = MAX(objRects[j].xMax, mtdPoints[i].pointLeft.x);
+				objRects[j].yMin = MIN(objRects[j].yMin, mtdPoints[i].pointLeft.y);
+				objRects[j].xMin = MIN(objRects[j].xMin, mtdPoints[i].pointLeft.x);
 
-				PASS(objRects[j].yMax, mtdPoints[i].pointLeft.y);
-				PASS(objRects[j].xMax, mtdPoints[i].pointLeft.x);
-				PASS(mtdPoints[i].pointLeft.y, objRects[j].yMin);
-				PASS(mtdPoints[i].pointLeft.x, objRects[j].xMin);
 				objRects[j].pointNum++;
-
-#undef PASS
 				objectFound = true;
 				break;
 			}
@@ -206,21 +162,120 @@ bool ShuttlecockRecognizer::shuttlecockDetection(Size windowSize, int yRange, in
 		}
 	}
 
-	for (auto i = 0; i < objRects.size(); i++)
+	for (size_t i = 0; i < objRects.size(); i++)
 	{
-		if (objRects[i].pointNum <= 10) { continue; }
+		if (objRects[i].pointNum <= 9) { continue; }
 
 		line(mtdCornerLeft, Point(objRects[i].xMin, objRects[i].yMin), Point(objRects[i].xMax, objRects[i].yMin), Scalar(0, 255, 0), 2);
 		line(mtdCornerLeft, Point(objRects[i].xMax, objRects[i].yMin), Point(objRects[i].xMax, objRects[i].yMax), Scalar(0, 255, 0), 2);
 		line(mtdCornerLeft, Point(objRects[i].xMax, objRects[i].yMax), Point(objRects[i].xMin, objRects[i].yMax), Scalar(0, 255, 0), 2);
 		line(mtdCornerLeft, Point(objRects[i].xMin, objRects[i].yMax), Point(objRects[i].xMin, objRects[i].yMin), Scalar(0, 255, 0), 2);
 	}
-
-
+	
 	imshow("mtdL", mtdCornerLeft);
 	imshow("mtdR", mtdCornerRight);
 
-	std::vector< DMatch > matches;
-	
-	return true;
+	if (!objRects.empty())
+	{
+		detectWindow.x = objRects[0].xMin;
+		detectWindow.y = objRects[0].yMin;
+		detectWindow.width = abs(objRects[0].xMax - objRects[0].xMin);
+		detectWindow.height = abs(objRects[0].yMax - objRects[0].yMin);
+		detectWindow &= Rect(0, 0, SRC_COLS, SRC_ROWS);
+
+		isObjectTracked = -1;
+
+		return true;
+	}
+	else { return false; }
+}
+
+/**
+* @brief  绣球跟踪
+* @param  None
+* @return STATUS类型，用于判断目标成功跟踪或者丢失
+* @note   在检测到绣球窗口的基础上，使用CAMShift算法对绣球进行跟踪
+* @author ST42_Action (Liang Chen)
+*/
+STATUS ShuttlecockRecognizer::shuttlecockTracking()
+{
+	if (isObjectTracked)
+	{
+		cvtColor(fgImageLeft, hsvImage, COLOR_BGR2HSV);
+
+		inRange(hsvImage, Scalar(0, 30, 40), Scalar(180, 255, 255), svMask);
+		int ch[] = { 0, 0 };
+		hueImage.create(hsvImage.size(), hsvImage.depth());
+		mixChannels(&hsvImage, 1, &hueImage, 1, ch, 1);
+
+		imshow("hsvImage", hueImage);
+
+		if (isObjectTracked < 0)
+		{
+			// Object has been selected by user, set up CAMShift search properties once
+			Mat roi(hueImage, detectWindow), maskroi(svMask, detectWindow);
+			calcHist(&roi, 1, 0, maskroi, hist, 1, &hSize, &phranges);
+			normalize(hist, hist, 0, 255, NORM_MINMAX);
+
+			trackWindow = detectWindow;
+			isObjectTracked = 1;
+
+			//-- Draw histogram
+			histImage = drawHist(hist, hSize);
+			imshow("Histogram", histImage);
+		}
+
+		//-- Perform CAMShift
+		if (!trackWindow.area()) { return false; }
+
+		calcBackProject(&hueImage, 1, 0, hist, backproj, &phranges);
+		backproj &= svMask;
+		RotatedRect trackBox = CamShift(backproj, trackWindow,
+			TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 10, 1));
+		if (trackWindow.area() <= 1)
+		{
+			int cols = backproj.cols, rows = backproj.rows, r = (MIN(cols, rows) + 5) / 6;
+			trackWindow = Rect(trackWindow.x - r, trackWindow.y - r,
+				trackWindow.x + r, trackWindow.y + r) &
+				Rect(0, 0, cols, rows);
+		}
+		if (!trackBox.size.area()) { return false; }
+
+		ellipse(fgImageLeft, trackBox, Scalar(0, 0, 255), 3, LINE_AA);
+	}
+
+	imshow("mtdL", fgImageLeft);
+	imshow("mtdR", fgImageRight);
+
+	if (trackWindow.area() > 50) { return true; }
+	else { return false; }
+}
+
+/**
+* @brief  绘制直方图
+* @param  hist 需要绘制的直方图
+* @param  hsize 直方图bin的数量
+* @return 返回该函数绘制出的直方图
+* @author ST42_Action (Liang Chen)
+*/
+Mat ShuttlecockRecognizer::drawHist(Mat hist, int hsize)
+{
+	Mat histImg = Mat::zeros(200, 320, CV_8UC3);
+	int binWidth = histImg.cols / hsize;
+	Mat buffer(1, hsize, CV_8UC3);
+
+	for (int i = 0; i < hsize; i++)
+	{
+		buffer.at<Vec3b>(i) = Vec3b(saturate_cast<uchar>(i * 180.0f / hsize), 255, 255);
+	}
+	cvtColor(buffer, buffer, COLOR_HSV2BGR);
+
+	for (int i = 0; i < hsize; i++)
+	{
+		int val = saturate_cast<int>(hist.at<float>(i) * histImg.rows / 255);
+		rectangle(histImg, Point(i * binWidth, histImg.rows), Point((i + 1) * binWidth, histImg.rows - val),
+			Scalar(buffer.at<Vec3b>(i)), -1, 8);
+	}
+
+	return histImg;
 }

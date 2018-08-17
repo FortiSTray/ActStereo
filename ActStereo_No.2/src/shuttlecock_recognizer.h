@@ -4,30 +4,10 @@
 #include "mv_stereo.h"
 #include "opencv2/xfeatures2d.hpp"
 
+using namespace cv;
 using namespace cv::xfeatures2d;
 
 typedef bool STATUS;
-
-//Outer Rect
-struct outerRect
-{
-	outerRect() {}
-	outerRect(int l, int r, int u, int d) : xMin(l), xMax(r), yMin(u), yMax(d) {}
-
-	int xMin = 0;
-	int xMax = 0;
-	int yMin = 0;
-	int yMax = 0;
-};
-
-//Connected Component
-typedef struct
-{
-	int size;
-	Point core;
-	outerRect outerRect;
-
-} ConnectedComponent;
 
 //-- Matched Points
 typedef struct
@@ -62,25 +42,26 @@ public:
 	ShuttlecockRecognizer& operator=(const ShuttlecockRecognizer&) = delete;
 	virtual ~ShuttlecockRecognizer() {}
 
-	//背景减除
+	//-- 背景减除
 	void backgroundSubtract();
 
-	void preProcessing();
+	//-- 图像预处理
+	void preprocess();
 
-	//以一个点为种子点获取连通域
-	void getConnectedComponent(Mat &binary, Point initialPoint, ConnectedComponent &cc);
+	//-- 绣球检测
+	STATUS shuttlecockDetection(Size windowSize, int yRange, int thresh);
 
-	//绣球检测
-	bool shuttlecockDetection(Size windowSize, int yRange, int thresh);
+	//-- 绣球跟踪
+	STATUS shuttlecockTracking();
+
+	//-- 直方图绘制
+	Mat drawHist(Mat hist, int hsize);
 
 	Mat getFgImageLeft() { return fgImageLeft; }
 	Mat getFgImageRight() { return fgImageRight; }
 
-	Mat getDstLeft() { return dstLeft; }
-	Mat getDstRight() { return dstRight; }
-
-	Mat getCornerLeft() { return cornerLeft; }
-	Mat getCornerRight() { return cornerRight; }
+	Mat getFgGrayLeft() { return fgGrayLeft; }
+	Mat getFgGrayRight() { return fgGrayRight; }
 
 	Mat getTestImage() { return testImage; }
 
@@ -89,20 +70,32 @@ private:
 	Mat fgMaskRight;
 	Mat fgImageLeft;
 	Mat fgImageRight;
-	Mat dstLeft;
-	Mat dstRight;
-	Mat cornerLeft;
-	Mat cornerRight;
+	Mat fgGrayLeft;
+	Mat fgGrayRight;
 	Mat mtdCornerLeft;
 	Mat mtdCornerRight;
+	Mat testImage;
 
+	//-- Background Subtract
 	Ptr<BackgroundSubtractor> bgModel;
-
+	
+	//-- Pre-Processing
 	Mat element;
 
-	Vec4d locationVec;
+	//-- Tracking
+	Rect detectWindow;
+	Rect trackWindow;
+	int isObjectTracked = 0;
+	int hSize = 16;
+	float hranges[2] = { 0, 180 };
+	const float* phranges = hranges;
 
-	Mat testImage;
+	Mat hsvImage;
+	Mat hueImage;
+	Mat svMask;
+	Mat hist;
+	Mat histImage = Mat::zeros(200, 320, CV_8UC3);
+	Mat backproj;
 };
 
 #endif //_SHUTTLECOCK_RECOGNIZER_H
