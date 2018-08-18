@@ -16,6 +16,15 @@ ShuttlecockRecognizer::ShuttlecockRecognizer(char* camNameL, CameraArguments arg
 	bgModel = createBackgroundSubtractorMOG2(500, 16.0, false).dynamicCast<BackgroundSubtractor>();
 
 	element = getStructuringElement(MORPH_RECT, Size(3, 3));
+
+	vMin = 10;
+	vMax = 256;
+	sMin = 0;
+
+	namedWindow("mtdL", WINDOW_AUTOSIZE);
+	createTrackbar("vMin", "mtdL", &vMin, 255, 0);
+	createTrackbar("vMax", "mtdL", &vMax, 255, 0);
+	createTrackbar("sMin", "mtdL", &sMin, 255, 0);
 }
 
 /**
@@ -27,8 +36,8 @@ ShuttlecockRecognizer::ShuttlecockRecognizer(char* camNameL, CameraArguments arg
 */
 void ShuttlecockRecognizer::backgroundSubtract()
 {
-	bgModel->apply(getFrameLeft(), fgMaskLeft, 0.01);
-	bgModel->apply(getFrameRight(), fgMaskRight, 0.01);
+	bgModel->apply(getFrameLeft(), fgMaskLeft, 0.004);
+	bgModel->apply(getFrameRight(), fgMaskRight, 0.004);
 
 	fgImageLeft = Scalar::all(0);
 	fgImageRight = Scalar::all(0);
@@ -183,6 +192,8 @@ STATUS ShuttlecockRecognizer::shuttlecockDetection(Size windowSize, int yRange, 
 		detectWindow.height = abs(objRects[0].yMax - objRects[0].yMin);
 		detectWindow &= Rect(0, 0, SRC_COLS, SRC_ROWS);
 
+		initKalmanFilter();
+
 		isObjectTracked = -1;
 
 		return true;
@@ -203,7 +214,7 @@ STATUS ShuttlecockRecognizer::shuttlecockTracking()
 	{
 		cvtColor(fgImageLeft, hsvImage, COLOR_BGR2HSV);
 
-		inRange(hsvImage, Scalar(0, 30, 40), Scalar(180, 255, 255), svMask);
+		inRange(hsvImage, Scalar(0, sMin, MIN(vMin, vMax)), Scalar(180, 255, MAX(vMin, vMax)), svMask);
 		int ch[] = { 0, 0 };
 		hueImage.create(hsvImage.size(), hsvImage.depth());
 		mixChannels(&hsvImage, 1, &hueImage, 1, ch, 1);
@@ -232,6 +243,8 @@ STATUS ShuttlecockRecognizer::shuttlecockTracking()
 		backproj &= svMask;
 		RotatedRect trackBox = CamShift(backproj, trackWindow,
 			TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 10, 1));
+		measureCenter = Point(static_cast<int>(trackBox.center.x), static_cast<int>(trackBox.center.y));
+
 		if (trackWindow.area() <= 1)
 		{
 			int cols = backproj.cols, rows = backproj.rows, r = (MIN(cols, rows) + 5) / 6;
@@ -241,7 +254,26 @@ STATUS ShuttlecockRecognizer::shuttlecockTracking()
 		}
 		if (!trackBox.size.area()) { return false; }
 
-		ellipse(fgImageLeft, trackBox, Scalar(0, 0, 255), 3, LINE_AA);
+		if (backprojMode) { cvtColor(backproj, fgImageLeft, COLOR_GRAY2BGR); }
+
+		rectangle(fgImageLeft, trackWindow, Scalar(255, 0, 0), 3, LINE_AA);
+
+		//-- Perform Kalman Filter
+		KF.predict();
+		predictCenter = Point(static_cast<int>(KF.statePost.at<float>(0)), static_cast<int>(KF.statePost.at<float>(1)));
+
+		measurement.at<float>(0) = static_cast<float>(measureCenter.x);
+		measurement.at<float>(1) = static_cast<float>(measureCenter.y);
+
+		KF.correct(measurement);
+		correctCenter = Point(static_cast<int>(KF.statePost.at<float>(0)), static_cast<int>(KF.statePost.at<float>(1)));
+
+		circle(fgImageLeft, measureCenter, 2, Scalar(255, 0, 0), 2, CV_AA); // draw camshift result
+		circle(fgImageLeft, predictCenter, 2, Scalar(0, 255, 0), 2, CV_AA); // draw kalman predict result
+		circle(fgImageLeft, correctCenter, 1, Scalar(0, 0, 255), 2, CV_AA); // draw kalman correct result
+
+		setCurrentTrackWindow();
+		rectangle(fgImageLeft, trackWindow, Scalar(0, 0, 255), 1, LINE_AA);
 	}
 
 	imshow("mtdL", fgImageLeft);
@@ -278,4 +310,50 @@ Mat ShuttlecockRecognizer::drawHist(Mat hist, int hsize)
 	}
 
 	return histImg;
+}
+
+void ShuttlecockRecognizer::initKalmanFilter()
+{
+	const int stateNum = 4;
+	const int measureNum = 2;
+
+	Mat statePost = (Mat_<float>(stateNum, 1) << trackWindow.x + trackWindow.width / 2.0f,
+												 trackWindow.y + trackWindow.height / 2.0f, 0.0f, 0.0f);
+	Mat transitionMatrix = (Mat_<float>(stateNum, stateNum) <<  1, 0, 1, 0,
+																0, 1, 0, 1,
+																0, 0, 1, 0,
+																0, 0, 0, 1);
+
+	KF.init(stateNum, measureNum);
+
+	KF.transitionMatrix = transitionMatrix;
+	KF.statePost = statePost;
+	setIdentity(KF.measurementMatrix);
+	setIdentity(KF.processNoiseCov, Scalar::all(1e-5));
+	setIdentity(KF.measurementNoiseCov, Scalar::all(1e-5));
+	setIdentity(KF.errorCovPost, Scalar::all(0.1));
+
+	measurement = Mat::zeros(measureNum, 1, CV_32F);
+}
+
+void ShuttlecockRecognizer::setCurrentTrackWindow()
+{
+	int rows = SRC_ROWS;
+	int cols = SRC_COLS;	
+
+	trackWindow.x = correctCenter.x - trackWindow.width / 2;
+	trackWindow.y = correctCenter.y - trackWindow.height / 2;
+	trackWindow &= Rect(0, 0, cols, rows);
+
+	if (trackWindow.width <= 0 || trackWindow.height <= 0) {
+		int width = MIN(correctCenter.x, cols - correctCenter.x) * 2;
+		int height = MIN(correctCenter.y, rows - correctCenter.y) * 2;
+
+		trackWindow = Rect(correctCenter.x - width / 2, correctCenter.y - height / 2, width, height);
+	}
+}
+
+inline Rect ShuttlecockRecognizer::getCurrentTrackWindow() const
+{
+	return trackWindow;
 }

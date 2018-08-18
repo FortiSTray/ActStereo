@@ -53,6 +53,10 @@ int main(int argc, char* argv[])
 		{
 			break;
 		}
+		else if (keyStatus == 'b' || keyStatus == 'B')
+		{
+			actStereoNo_1.reverseBackprojMode();
+		}
 	}
 
 	return 0;

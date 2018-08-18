@@ -54,6 +54,11 @@ public:
 	//-- ÐåÇò¸ú×Ù
 	STATUS shuttlecockTracking();
 
+	//-- ¿¨¶ûÂüÂË²¨Ïà¹Ø
+	void initKalmanFilter();
+	void setCurrentTrackWindow();
+	inline Rect getCurrentTrackWindow() const;
+
 	//-- Ö±·½Í¼»æÖÆ
 	Mat drawHist(Mat hist, int hsize);
 
@@ -64,6 +69,8 @@ public:
 	Mat getFgGrayRight() { return fgGrayRight; }
 
 	Mat getTestImage() { return testImage; }
+
+	void reverseBackprojMode() { backprojMode = !backprojMode; }
 
 private:
 	Mat fgMaskLeft;
@@ -86,9 +93,17 @@ private:
 	Rect detectWindow;
 	Rect trackWindow;
 	int isObjectTracked = 0;
+	bool backprojMode = 0;
 	int hSize = 16;
 	float hranges[2] = { 0, 180 };
 	const float* phranges = hranges;
+
+	//-- Kalman Filter
+	KalmanFilter KF;
+	Mat_<float> measurement;
+	Point measureCenter;
+	Point predictCenter;
+	Point correctCenter;
 
 	Mat hsvImage;
 	Mat hueImage;
@@ -96,6 +111,10 @@ private:
 	Mat hist;
 	Mat histImage = Mat::zeros(200, 320, CV_8UC3);
 	Mat backproj;
+
+	int vMin;
+	int vMax;
+	int sMin;
 };
 
 #endif //_SHUTTLECOCK_RECOGNIZER_H
