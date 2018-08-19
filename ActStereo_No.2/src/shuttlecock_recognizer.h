@@ -57,7 +57,9 @@ public:
 	//-- ¿¨¶ûÂüÂË²¨Ïà¹Ø
 	void initKalmanFilter();
 	void setCurrentTrackWindow();
-	inline Rect getCurrentTrackWindow() const;
+
+	//-- ĞåÇòÆ¥Åä
+	STATUS shuttlecockMatching();
 
 	//-- Ö±·½Í¼»æÖÆ
 	Mat drawHist(Mat hist, int hsize);
@@ -104,6 +106,12 @@ private:
 	Point measureCenter;
 	Point predictCenter;
 	Point correctCenter;
+
+	//-- Matching
+	Mat templateImage;
+	Rect searchWidnow;
+	Mat searchImage;
+	Rect matchedWindow;
 
 	Mat hsvImage;
 	Mat hueImage;

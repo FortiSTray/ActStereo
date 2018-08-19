@@ -37,6 +37,8 @@ int main(int argc, char* argv[])
 		case DETECTION:
 			if (actStereoNo_1.shuttlecockDetection(Size(7, 7), 1, 47) == true) { status = TRACKING; }
 			cout << "Detecting" << endl;
+/*
+			actStereoNo_1.shuttlecockDetection(Size(7, 7), 1, 47);*/
 
 			break;
 

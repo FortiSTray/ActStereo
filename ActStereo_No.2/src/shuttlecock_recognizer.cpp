@@ -36,8 +36,8 @@ ShuttlecockRecognizer::ShuttlecockRecognizer(char* camNameL, CameraArguments arg
 */
 void ShuttlecockRecognizer::backgroundSubtract()
 {
-	bgModel->apply(getFrameLeft(), fgMaskLeft, 0.004);
-	bgModel->apply(getFrameRight(), fgMaskRight, 0.004);
+	bgModel->apply(getFrameLeft(), fgMaskLeft, 0.006);
+	bgModel->apply(getFrameRight(), fgMaskRight, 0.006);
 
 	fgImageLeft = Scalar::all(0);
 	fgImageRight = Scalar::all(0);
@@ -274,6 +274,8 @@ STATUS ShuttlecockRecognizer::shuttlecockTracking()
 
 		setCurrentTrackWindow();
 		rectangle(fgImageLeft, trackWindow, Scalar(0, 0, 255), 1, LINE_AA);
+
+		if (shuttlecockMatching() == false) { return false; }
 	}
 
 	imshow("mtdL", fgImageLeft);
@@ -353,7 +355,48 @@ void ShuttlecockRecognizer::setCurrentTrackWindow()
 	}
 }
 
-inline Rect ShuttlecockRecognizer::getCurrentTrackWindow() const
+STATUS ShuttlecockRecognizer::shuttlecockMatching()
 {
-	return trackWindow;
+	Mat resultImage;
+
+	templateImage = fgImageLeft(trackWindow).clone();
+	searchWidnow = Rect(0, trackWindow.y, fgImageRight.cols, trackWindow.height);
+	searchImage = fgImageRight(searchWidnow).clone();
+
+	//imshow("searchImage", searchImage);
+	//imshow("templateIamge", templateImage);
+
+	matchTemplate(searchImage, templateImage, resultImage, TM_CCORR_NORMED);
+	//normalize(resultImage, resultImage, 0, 1, NORM_MINMAX, -1, Mat());
+
+	Mat testImage(10, resultImage.cols, resultImage.type());
+
+	for (int k = 0; k < 10; k++)
+		for (int l = 0; l < resultImage.cols; l++)
+		{
+			*testImage.ptr<float>(k, l) = resultImage.ptr<float>(0)[l];
+		}
+	imshow("matching", testImage);
+
+	double minValue;
+	double maxValue;
+	Point minLocation;
+	Point maxLocation;
+	Point matchLacation;
+
+	minMaxLoc(resultImage, &minValue, &maxValue, &minLocation, &maxLocation, Mat());
+
+	if (maxValue > 0.35f)
+	{
+		matchLacation = maxLocation;
+		matchedWindow = Rect(matchLacation.x, matchLacation.y + trackWindow.y,
+			trackWindow.width, trackWindow.height);
+		rectangle(fgImageRight, matchedWindow, Scalar(0, 0, 255), 1, LINE_AA);
+
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
